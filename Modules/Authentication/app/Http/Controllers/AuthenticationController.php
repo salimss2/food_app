@@ -1,9 +1,10 @@
 <?php
 
-namespace Modules\Authentication\Http\Controllers;
+namespace Modules\Authentication\app\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\User;
 
 class AuthenticationController extends Controller
 {

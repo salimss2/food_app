@@ -27,12 +27,11 @@
     },
     "autoload": {
         "psr-4": {
-        "App\\": "app/",
-        "Modules\\": "Modules/", 
-        "Database\\Factories\\": "database/factories/",
-        "Database\\Seeders\\": "database/seeders/",
-        "Modules\\Authentication\\": "Modules/Authentication/app/"
-        }
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/",
+            "Modules\\": "Modules/" 
+            }
     },
     "autoload-dev": {
         "psr-4": {

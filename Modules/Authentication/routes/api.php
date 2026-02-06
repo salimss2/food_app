@@ -1,12 +1,14 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\Authentication\Http\Controllers\AuthenticationController;
-use Modules\Authentication\app\Http\Controllers\AuthenticationController;
+use Modules\Authentication\app\Http\Controllers\AuthenticationController; // استدعاء واحد فقط ونظيف
 
-Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
-    Route::apiResource('authentications', AuthenticationController::class)->names('authentication');
-});
-
-
+// روابط عامة
+Route::post('/login', [AuthenticationController::class, 'login']);
 Route::post('/register', [AuthenticationController::class, 'register']);
+
+// روابط محمية
+// الطريقة الصحيحة للكتابة
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/delivery/complete-profile', [AuthenticationController::class, 'completeDeliveryProfile']);
+});
