@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Authentication\Providers;
+namespace Modules\Authentication\app\Providers;
 
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Route;
@@ -45,6 +45,10 @@ class RouteServiceProvider extends ServiceProvider
      */
     protected function mapApiRoutes(): void
     {
-        Route::middleware('api')->prefix('api')->name('api.')->group(module_path($this->name, '/routes/api.php'));
+        Route::middleware('api')
+            ->prefix('api')
+            ->name('api.')
+            // ❌ قمنا بحذف سطر ->namespace(...) لكي لا يضيف المسار الخاطئ
+            ->group(module_path($this->name, '/routes/api.php'));
     }
 }

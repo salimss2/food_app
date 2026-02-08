@@ -5,7 +5,15 @@
     "keywords": [],
     "priority": 0,
     "providers": [
-        "Modules\\Authentication\\Providers\\AuthenticationServiceProvider"
+        "Modules\\Authentication\\app\\Providers\\AuthenticationServiceProvider",
+        "Modules\\Authentication\\app\\Providers\\RouteServiceProvider"
     ],
-    "files": []
+    "files": [],
+    "autoload": {
+        "psr-4": {
+            "Modules\\Authentication\\": "app/",
+            "Modules\\Authentication\\Database\\Factories\\": "database/factories/",
+            "Modules\\Authentication\\Database\\Seeders\\": "database/seeders/"
+        }
+    }
 }

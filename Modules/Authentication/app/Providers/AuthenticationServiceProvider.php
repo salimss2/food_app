@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Authentication\Providers;
+namespace Modules\Authentication\app\Providers;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
@@ -143,7 +143,8 @@ class AuthenticationServiceProvider extends ServiceProvider
     private function getPublishableViewPaths(): array
     {
         $paths = [];
-        foreach (config('view.paths') as $path) {
+        $viewPaths = config('view.paths', []);
+        foreach ($viewPaths as $path) {
             if (is_dir($path.'/modules/'.$this->nameLower)) {
                 $paths[] = $path.'/modules/'.$this->nameLower;
             }

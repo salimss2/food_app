@@ -4,77 +4,36 @@ namespace Modules\Authentication\app\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\User;
 
 class AuthenticationController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        return view('authentication::index');
+        return response()->json(['message' => 'Auth Module Works!']);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function register(Request $request) 
     {
-        return view('authentication::create');
+        $data = $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|min:6',
+            'role' => 'required|in:customer,delivery,restaurant',
+            'phone' => 'required'
+        ]);
+
+        // منطق التسجيل سيتم وضعه هنا
+        return response()->json(['message' => 'User registered successfully']);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request) {}
-
-    /**
-     * Show the specified resource.
-     */
-    public function show($id)
+    // أضف هذه الدوال فوراً لأن ملف api.php يحتاجها
+    public function login(Request $request) 
     {
-        return view('authentication::show');
+        return response()->json(['message' => 'Login method']);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
+    public function completeDeliveryProfile(Request $request) 
     {
-        return view('authentication::edit');
+        return response()->json(['message' => 'Profile completion method']);
     }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id) {}
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id) {}
-
-    public function register(Request $request) {
-    $data = $request->validate([
-        'name' => 'required',
-        'email' => 'required|email|unique:users',
-        'password' => 'required|min:6',
-        'role' => 'required|in:customer,delivery,restaurant', // نمنع تسجيل الأدمن من هنا
-        'phone' => 'required'
-    ]);
-
-    $user = User::create([
-        'name' => $data['name'],
-        'email' => $data['email'],
-        'password' => bcrypt($data['password']),
-        'role' => $data['role'],
-        'phone' => $data['phone'],
-    ]);
-
-    return response()->json([
-        'message' => 'User registered as ' . $user->role,
-        'user' => $user
-    ], 201);
-}
 }
