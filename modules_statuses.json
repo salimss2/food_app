@@ -1,3 +1,13 @@
 {
-    "Authentication": true
+    "Auth": true,
+    "Users": true,
+    "Restaurants": true,
+    "Orders": true,
+    "Payments": true,
+    "Finance": true,
+    "Delivery": true,
+    "Notifications": true,
+    "Support": true,
+    "Admin": true,
+    "Scheduling": true
 }
