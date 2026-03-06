@@ -55,6 +55,50 @@ class AuthController extends Controller
     }
 
     /**
+     * تسجيل دخول مستخدم موجود مسبقاً.
+     */
+    public function login(Request $request)
+    {
+        // 1. التحقق من البيانات المرسلة
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+
+        // 2. البحث عن المستخدم في قاعدة البيانات عبر البريد الإلكتروني
+        $user = User::where('email', $request->email)->first();
+
+        // 3. التحقق من وجود المستخدم ومطابقة كلمة المرور المشفرة
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'message' => 'بيانات الدخول غير صحيحة، يرجى المحاولة مرة أخرى.'
+            ], 401);
+        }
+
+        // 4. إنشاء توكن جديد لجلسة الدخول الحالية
+        $token = $user->createToken('mobile_app')->plainTextToken;
+
+        // 5. الرد بنجاح العملية مع إرجاع بيانات المستخدم والتوكن
+        return response()->json([
+            'user' => $user,
+            'token' => $token
+        ], 200);
+    }
+
+    /**
+     * تسجيل خروج المستخدم وحذف التوكن الحالي.
+     */
+    public function logout(Request $request)
+    {
+        // مسح التوكن الحالي الذي استخدمه المستخدم للدخول
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'message' => 'تم تسجيل الخروج بنجاح.'
+        ], 200);
+    }
+
+    /**
      * Show the specified resource.
      */
     public function show($id)
