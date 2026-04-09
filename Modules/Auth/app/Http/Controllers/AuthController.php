@@ -6,121 +6,226 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function register(Request $request)
     {
-        return view('auth::index');
+        try {
+            $request->validate([
+                'name' => 'required|string',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|min:6|confirmed'
+            ]);
+
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'status' => 'active'
+            ]);
+
+            if (method_exists($user, 'assignRole')) {
+                $user->assignRole('customer');
+            }
+
+            DB::table('profiles')->insert([
+                'user_id' => $user->id,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            $token = $user->createToken('customer_app')->plainTextToken;
+
+            return response()->json([
+                'status' => true,
+                'user' => $user,
+                'token' => $token
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        return view('auth::create');
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        // 1. التحقق من البيانات
-        $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|email', // أزلنا unique مؤقتاً للتجربة
-            'password' => 'required'
-        ]);
-
-        // 2. إنشاء المستخدم
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password) // استخدم Hash::make بدلاً من bcrypt
-        ]);
-
-        // 3. إنشاء التوكن
-        $token = $user->createToken('mobile_app')->plainTextToken;
-
-        // 4. الرد السريع
-        return response()->json([
-            'user' => $user,
-            'token' => $token
-        ], 200);
-    }
-
-    /**
-     * تسجيل دخول مستخدم موجود مسبقاً.
-     */
     public function login(Request $request)
     {
-        // 1. التحقق من البيانات المرسلة
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
+        try {
+            $request->validate([
+                'email' => 'required|email',
+                'password' => 'required'
+            ]);
 
-        // 2. البحث عن المستخدم في قاعدة البيانات عبر البريد الإلكتروني
-        $user = User::where('email', $request->email)->first();
+            $user = User::where('email', $request->email)->first();
 
-        // 3. التحقق من وجود المستخدم ومطابقة كلمة المرور المشفرة
-        if (!$user || !Hash::check($request->password, $user->password)) {
+            if (!$user || !Hash::check($request->password, $user->password)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Invalid credentials'
+                ], 401);
+            }
+
+            if ($user->status != 'active') {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Account not active'
+                ], 403);
+            }
+
+            $user->tokens()->delete();
+            $token = $user->createToken('api_token')->plainTextToken;
+
+            $profile = DB::table('profiles')->where('user_id', $user->id)->first();
+
+            if ($profile) {
+                $user->address = $profile->address;
+                $user->location = $profile->location;
+                $user->image = $profile->avatar;
+            }
+
             return response()->json([
-                'message' => 'بيانات الدخول غير صحيحة، يرجى المحاولة مرة أخرى.'
-            ], 401);
+                'status' => true,
+                'user' => $user,
+                'token' => $token
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        // 4. إنشاء توكن جديد لجلسة الدخول الحالية
-        $token = $user->createToken('mobile_app')->plainTextToken;
-
-        // 5. الرد بنجاح العملية مع إرجاع بيانات المستخدم والتوكن
-        return response()->json([
-            'user' => $user,
-            'token' => $token
-        ], 200);
     }
 
-    /**
-     * تسجيل خروج المستخدم وحذف التوكن الحالي.
-     */
     public function logout(Request $request)
     {
-        // مسح التوكن الحالي الذي استخدمه المستخدم للدخول
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'message' => 'تم تسجيل الخروج بنجاح.'
-        ], 200);
+            'message' => 'تم تسجيل الخروج بنجاح'
+        ]);
     }
 
-    /**
-     * Show the specified resource.
-     */
-    public function show($id)
+    // ✅ التعديل المهم هنا
+    public function update(Request $request)
     {
-        return view('auth::show');
+        try {
+            $user = $request->user();
+
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email,' . $user->id,
+                'phone' => 'nullable|string',
+                'address' => 'nullable|string',
+                'location' => 'nullable|string',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096'
+            ]);
+
+            // ✅ 1. تحديث user
+            $user->update([
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone
+            ]);
+
+            // ✅ 2. تجهيز profile بدون شروط (الحل الأقوى)
+            $profileData = [
+                'address' => $request->address,
+                'location' => $request->location,
+                'updated_at' => now()
+            ];
+
+            // ✅ 3. رفع الصورة
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
+                $imageName = time() . '_' . $user->id . '.' . $image->getClientOriginalExtension();
+                $image->move(public_path('uploads/profiles'), $imageName);
+
+                $profileData['avatar'] = 'uploads/profiles/' . $imageName;
+            }
+
+            // ✅ 4. تحديث أو إنشاء profile
+            DB::table('profiles')->updateOrInsert(
+                ['user_id' => $user->id],
+                $profileData
+            );
+
+            // ✅ 5. جلب البيانات النهائية
+            $profile = DB::table('profiles')->where('user_id', $user->id)->first();
+
+            $user->address = $profile->address ?? null;
+            $user->location = $profile->location ?? null;
+            $user->image = $profile->avatar ?? null;
+
+            return response()->json([
+                'status' => true,
+                'message' => 'تم تحديث البيانات بنجاح',
+                'user' => $user
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
+    public function googleSignIn(Request $request)
     {
-        return view('auth::edit');
+        $request->validate([
+            'idToken' => 'required|string',
+        ]);
+
+        try {
+            $client = new \Google_Client(['client_id' => env('GOOGLE_CLIENT_ID')]);
+            $payload = $client->verifyIdToken($request->idToken);
+
+            if (!$payload) {
+                return response()->json(['status' => false], 401);
+            }
+
+            $googleId = $payload['sub'];
+            $email = $payload['email'];
+            $name = $payload['name'];
+            $picture = $payload['picture'] ?? null;
+
+            $user = User::where('email', $email)->orWhere('google_id', $googleId)->first();
+
+            if (!$user) {
+                $user = User::create([
+                    'name' => $name,
+                    'email' => $email,
+                    'google_id' => $googleId,
+                    'status' => 'active'
+                ]);
+
+                DB::table('profiles')->insert([
+                    'user_id' => $user->id,
+                    'avatar' => $picture,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+
+            $user->tokens()->delete();
+            $token = $user->createToken('api_token')->plainTextToken;
+
+            return response()->json([
+                'status' => true,
+                'user' => $user,
+                'token' => $token
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id) {}
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id) {}
 }

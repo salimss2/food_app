@@ -1,15 +1,22 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Modules\Auth\Http\Controllers\AuthController;
 
-// 1. مسارات عامة (لا تضعها داخل أي middleware)
-Route::prefix('v1')->group(function () {
-    Route::post('/auths', [AuthController::class, 'store']); // مسار إنشاء الحساب
-    Route::post('/auths/login', [AuthController::class, 'login']); // مسار تسجيل الدخول
-});
-
-// 2. مسارات محمية (للمسجلين فقط)
-Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
-    Route::post('/auths/logout', [AuthController::class, 'logout']);
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('auth')->group(function () {
+    // 1. المسارات التي لا تحتاج تسجيل دخول
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/google-signin', [AuthController::class, 'googleSignIn']);
+    // 2. المسارات التي تحتاج أن يكون المستخدم مسجل الدخول (محمية بالتوكن)
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/update', [AuthController::class, 'update']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+    });
 });
