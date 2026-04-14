@@ -13,10 +13,27 @@ class Restaurant extends Model
     /**
      * The attributes that are mass assignable.
      */
-    protected $fillable = [];
+    protected $fillable = [
+        'name',
+        'location',
+        'status',
+        'category',
+        'owner_id',
+        'user_id',
+        'logo',
+        'account_status'
+    ];
 
-    // protected static function newFactory(): RestaurantFactory
-    // {
-    //     // return RestaurantFactory::new();
-    // }
+    public function owner()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'owner_id');
+    }
+
+    public function getLogoUrlAttribute()
+    {
+        if ($this->logo) {
+            return asset('storage/restaurants/logos/' . $this->logo);
+        }
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random';
+    }
 }

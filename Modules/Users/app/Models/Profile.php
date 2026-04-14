@@ -4,19 +4,32 @@ namespace Modules\Users\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-// use Modules\Users\Database\Factories\ProfileFactory;
+use App\Models\User; // أو مسار مودل اليوزر في الموديول لديك
 
 class Profile extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     */
-    protected $fillable = [];
+    protected $fillable = [
+        'user_id',
+        'avatar',
+        'address',
+        'location',
+        'preferences',
+    ];
 
-    // protected static function newFactory(): ProfileFactory
-    // {
-    //     // return ProfileFactory::new();
-    // }
+    /**
+     * تحويل حقل الـ preferences من JSON إلى مصفوفة تلقائياً
+     */
+    protected $casts = [
+        'preferences' => 'array',
+    ];
+
+    /**
+     * علاقة البروفايل بالمستخدم
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

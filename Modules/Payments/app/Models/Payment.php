@@ -15,8 +15,8 @@ class Payment extends Model
      */
     protected $fillable = [];
 
-    // protected static function newFactory(): PaymentFactory
-    // {
-    //     // return PaymentFactory::new();
-    // }
+    public function proof()
+{
+    return $this->hasOne(PaymentProof::class);
+}
 }

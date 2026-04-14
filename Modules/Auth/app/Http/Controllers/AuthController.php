@@ -6,77 +6,311 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB; // أضفنا هذا للتعامل مع قاعدة البيانات مباشرة
 
 class AuthController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+
+    // تسجيل زبون جديد
+    // public function register(Request $request)
+    // {
+    //     $request->validate([
+    //         'name' => 'required|string',
+    //         'email' => 'required|email|unique:users,email',
+    //         'password' => 'required|min:6|confirmed'
+    //     ]);
+
+    //     $user = User::create([
+    //         'name' => $request->name,
+    //         'email' => $request->email,
+    //         'password' => Hash::make($request->password),
+    //         'status' => 'active'
+    //     ]);
+
+    //     // إعطاء الدور
+    //     $user->assignRole('customer');
+
+    //     // حذف التوكنات القديمة (اختياري)
+    //     $user->tokens()->delete();
+
+    //     $token = $user->createToken('customer_app')->plainTextToken;
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'user' => $user,
+    //         'roles' => $user->getRoleNames(),
+    //         'token' => $token
+    //     ]);
+    // الدخول 
+
+
+    // تسجيل زبون جديد
+    public function register(Request $request)
     {
-        return view('auth::index');
+        try {
+            $request->validate([
+                'name' => 'required|string',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|min:6|confirmed'
+            ]);
+
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'status' => 'active'
+            ]);
+
+            // ملاحظة: تأكد أن مودل User يحتوي على HasRoles
+            if (method_exists($user, 'assignRole')) {
+                $user->assignRole('customer');
+            }
+
+            $token = $user->createToken('customer_app')->plainTextToken;
+
+            return response()->json([
+                'status' => true,
+                'user' => $user,
+                'token' => $token,
+                'message' => 'User registered successfully'
+            ], 201); // نرسل 201 للتأكيد على الإنشاء
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'بيانات التحقق غير صحيحة',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            // هذا السطر سينقذك! سيخبر صديقك بالضبط ما هو الخطأ في السيرفر
+            return response()->json([
+                'status' => false,
+                'message' => 'حدث خطأ في السيرفر: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        return view('auth::create');
-    }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    // public function register(Request $request)
+    // {
+    //     $request->validate([
+    //         'name' => 'required|string',
+    //         'email' => 'required|email|unique:users,email',
+    //         'password' => 'required|min:6|confirmed'
+    //     ]);
+
+    //     $user = User::create([
+    //         'name' => $request->name,
+    //         'email' => $request->email,
+    //         'password' => Hash::make($request->password)
+    //     ]);
+
+    //     // إعطاء الدور الافتراضي
+    //     $user->assignRole('customer');
+
+    //     $token = $user->createToken('mobile_app')->plainTextToken;
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'user' => $user,
+    //         'role' => $user->getRoleNames()->first(),
+    //         'token' => $token
+    //     ]);
+    // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //  تسجيل الدخول للكل
+    // public function login(Request $request)
+    // {
+
+    //     $request->validate([
+    //         'email'=>'required|email',
+    //         'password'=>'required'
+    //     ]);
+
+    //     $user = User::where('email',$request->email)->first();
+
+    //     if(!$user || !Hash::check($request->password,$user->password)){
+    //         return response()->json([
+    //             'status'=>false,
+    //             'message'=>'Invalid credentials'
+    //         ],401);
+    //     }
+
+    //     $token = $user->createToken('mobile_app')->plainTextToken;
+
+    //     return response()->json([
+    //         'status'=>true,
+    //         'user'=>$user,
+    //         'role'=>$user->getRoleNames()->first(),
+    //         'token'=>$token
+    //     ]);
+    // }
+
+    //  تسجيل الدخول للزبون
+    public function login(Request $request)
     {
-        // 1. التحقق من البيانات
         $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|email', // أزلنا unique مؤقتاً للتجربة
+            'email' => 'required|email',
             'password' => 'required'
         ]);
 
-        // 2. إنشاء المستخدم
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password) // استخدم Hash::make بدلاً من bcrypt
-        ]);
+        $user = User::where('email', $request->email)->first();
 
-        // 3. إنشاء التوكن
-        $token = $user->createToken('mobile_app')->plainTextToken;
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid credentials'
+            ], 401);
+        }
 
-        // 4. الرد السريع
+        if ($user->status != 'active') {
+            return response()->json([
+                'status' => false,
+                'message' => 'Account not active'
+            ], 403);
+        }
+
+        // if (!$user->hasRole('Restaurant Owner')) {
+        //     return response()->json([
+        //         'status' => false,
+        //         'message' => 'عذراً، هذا التطبيق مخصص لأصحاب المطاعم فقط.'
+        //     ], 403);
+        // }
+        // حذف التوكنات القديمة
+        $user->tokens()->delete();
+
+        $token = $user->createToken('api_token')->plainTextToken;
+
+        // جلب ID المطعم المرتبط بهذا المستخدم (صاحب المطعم)
+        $restaurantId = \Illuminate\Support\Facades\DB::table('restaurants')
+            ->where('owner_id', $user->id)
+            ->value('id');
+
+        // 5. إرسال الرد النهائي لـ Flutter
         return response()->json([
+            'status' => true,
             'user' => $user,
-            'token' => $token
-        ], 200);
+            'roles' => $user->getRoleNames(), // لجلب الأدوار من Spatie
+            'token' => $token,
+            'restaurant_id' => $restaurantId, // سيستلمه مبرمج فلاتر لحفظه
+        ]);
     }
 
-    /**
-     * Show the specified resource.
-     */
-    public function show($id)
+    // تحديث بيانات الملف الشخصي
+    public function update(Request $request)
     {
-        return view('auth::show');
+        try {
+            $user = $request->user();
+
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email,' . $user->id,
+                'phone' => 'nullable|string',
+                'address' => 'nullable|string',
+                'location' => 'nullable|string',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096'
+            ]);
+
+            // 1. تحديث البيانات في جدول users
+            $user->name = $request->name;
+            $user->email = $request->email;
+            if ($request->has('phone')) {
+                $user->phone = $request->phone;
+            }
+            $user->save();
+
+            // 2. تجهيز بيانات جدول profiles
+            $profileData = [
+                'updated_at' => now()
+            ];
+
+            if ($request->has('address')) {
+                $profileData['address'] = $request->address;
+            }
+            if ($request->has('location')) {
+                $profileData['location'] = $request->location;
+            }
+
+            // 3. معالجة رفع الصورة (avatar)
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
+                $imageName = time() . '_' . $user->id . '.' . $image->getClientOriginalExtension();
+                $image->move(public_path('uploads/profiles'), $imageName);
+                $profileData['avatar'] = 'uploads/profiles/' . $imageName;
+            }
+
+            // 4. تحديث البروفايل أو إنشائه إذا لم يكن موجوداً
+            DB::table('profiles')->updateOrInsert(
+                ['user_id' => $user->id],
+                $profileData
+            );
+
+            // 5. إضافة بيانات البروفايل للرد ليقوم فلاتر بتحديث الواجهة
+            $user->address = $profileData['address'] ?? $request->address;
+            $user->location = $profileData['location'] ?? $request->location;
+            if (isset($profileData['avatar'])) {
+                $user->image = $profileData['avatar'];
+            }
+
+            // في ملف لارافل - نهاية دالة update
+            return response()->json([
+                'status' => true,
+                'message' => 'تم تحديث البيانات بنجاح',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'address' => $user->address,
+                    'location' => $user->location,
+                    'image' => $user->image, // المسار الجديد للصورة
+                ]
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'بيانات التحقق غير صحيحة',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'حدث خطأ في السيرفر: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
-    {
-        return view('auth::edit');
+   public function getProfile(Request $request) {
+    try {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['status' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        // جرب جلب البيانات بدون تحميل العلاقات أولاً للتأكد
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'name'  => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+            ]
+        ]);
+    } catch (\Exception $e) {
+        // هذا السطر سيطبع الخطأ في فلاتر بدلاً من إرسال null
+        return response()->json(['status' => false, 'error' => $e->getMessage()], 500);
     }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id) {}
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id) {}
+}
 }
