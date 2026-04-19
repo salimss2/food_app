@@ -13,7 +13,19 @@ class Order extends Model
     /**
      * The attributes that are mass assignable.
      */
-    protected $fillable = [];
+    protected $fillable = [
+        'user_id',
+        'total',
+        'status',
+    ];
+
+    /**
+     * العلاقة: طلب واحد يحتوي على عدة عناصر.
+     */
+    public function items()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
 
     // protected static function newFactory(): OrderFactory
     // {

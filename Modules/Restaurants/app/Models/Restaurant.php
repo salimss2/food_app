@@ -36,4 +36,22 @@ class Restaurant extends Model
         }
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random';
     }
+
+
+    protected $guarded = [];
+
+    public function menus()
+    {
+        return $this->hasMany(Menu::class);
+    }
+
+    public function meals()
+    {
+        return $this->hasMany(Meal::class);
+    }
+
+    public function offers()
+    {
+        return $this->hasMany(Offer::class);
+    }
 }

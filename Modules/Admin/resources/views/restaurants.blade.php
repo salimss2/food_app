@@ -298,21 +298,34 @@
                             </form>
                         </div>
                         
-                        <div class="flex flex-wrap items-center justify-center gap-2 text-xs font-medium">
-                            {{-- Total --}}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-gray-100 text-gray-600 shadow-sm border border-gray-200">
-                                Total <span class="font-bold text-gray-900 ml-1">{{ $totalRestaurants ?? 0 }}</span>
-                            </span>
+                        <div class="flex flex-wrap items-center justify-center gap-2 text-xs font-medium" id="filterToolbar">
+                            {{-- All --}}
+                            <button onclick="filterRestaurants('all', this)" class="filter-btn active-filter inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-white shadow-sm transition-all">
+                                Total <span class="font-bold ml-1">{{ $totalRestaurants ?? 0 }}</span>
+                            </button>
                             
-                            {{-- Status Counts --}}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-green-50 text-green-700 shadow-sm border border-green-100">
+                            {{-- State Filters --}}
+                            <button onclick="filterRestaurants('open', this)" class="filter-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-gray-600 shadow-sm border border-gray-200 hover:bg-green-50 hover:text-green-700 transition-all">
                                 <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                                Open <span class="font-bold ml-1">{{ $activeRestaurants ?? 0 }}</span>
-                            </span>
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-red-50 text-red-700 shadow-sm border border-red-100">
+                                Online <span class="font-bold ml-1">{{ $activeRestaurants ?? 0 }}</span>
+                            </button>
+                            <button onclick="filterRestaurants('closed', this)" class="filter-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-gray-600 shadow-sm border border-gray-200 hover:bg-red-50 hover:text-red-700 transition-all">
                                 <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                                Closed <span class="font-bold ml-1">{{ $inactiveRestaurants ?? 0 }}</span>
-                            </span>
+                                Offline <span class="font-bold ml-1">{{ $inactiveRestaurants ?? 0 }}</span>
+                            </button>
+
+                            <div class="w-px h-4 bg-gray-300 mx-1"></div>
+
+                            {{-- Account Status Filters --}}
+                            <button onclick="filterRestaurants('active', this)" class="filter-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-gray-600 shadow-sm border border-gray-200 hover:bg-indigo-50 hover:text-indigo-700 transition-all">
+                                Active
+                            </button>
+                            <button onclick="filterRestaurants('inactive', this)" class="filter-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-gray-600 shadow-sm border border-gray-200 hover:bg-yellow-50 hover:text-yellow-700 transition-all">
+                                Inactive
+                            </button>
+                            <button onclick="filterRestaurants('blocked', this)" class="filter-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-gray-600 shadow-sm border border-gray-200 hover:bg-red-50 hover:text-red-700 transition-all">
+                                Blocked
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -333,7 +346,10 @@
                             </thead>
                             <tbody id="restaurantsTableBody" class="divide-y divide-gray-200 bg-white">
                                 @forelse($restaurants as $restaurant)
-                                <tr id="restaurant-row-{{ $restaurant->id }}" class="hover:bg-gray-50 transition-colors">
+                                <tr id="restaurant-row-{{ $restaurant->id }}" 
+                                    data-state="{{ strtolower($restaurant->status) }}" 
+                                    data-account-status="{{ strtolower($restaurant->account_status) }}"
+                                    class="hover:bg-gray-50 transition-colors">
                                     <td class="px-6 py-4">
                                         <div class="flex items-center">
                                             <img class="res-logo h-10 w-10 rounded-lg border border-gray-200 mr-3 object-cover" 

@@ -25,6 +25,13 @@
                 <div class="text-xs uppercase font-semibold text-gray-400 tracking-wider mb-2">Orders</div>
             </li>
             <li>
+                <a href="{{ route('orders.command-center') }}" class="relative flex flex-row-reverse items-center h-11 focus:outline-none hover:bg-gray-50 text-primary bg-indigo-50 border-r-4 border-primary px-6 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    <span class="mr-3 font-medium text-sm">غرفة العمليات</span>
+                    <span class="absolute left-0 top-0 mt-3 ml-4 bg-red-500 text-white text-[10px] px-1.5 py-0.5 animate-pulse">Live</span>
+                </a>
+            </li>
+            <li>
                 <a href="#" class="relative flex flex-row items-center h-11 focus:outline-none hover:bg-gray-50 text-gray-600 hover:text-gray-800 border-l-4 border-transparent px-6 group transition-colors">
                     <svg class="w-5 h-5 text-gray-400 group-hover:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                     <span class="ml-3 font-medium text-sm">Active Orders</span>

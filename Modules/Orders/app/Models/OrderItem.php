@@ -13,7 +13,20 @@ class OrderItem extends Model
     /**
      * The attributes that are mass assignable.
      */
-    protected $fillable = [];
+    protected $fillable = [
+        'order_id',
+        'meal_id',
+        'quantity',
+        'subtotal',
+    ];
+
+    /**
+     * العلاقة: عنصر الطلب ينتمي لطلب واحد.
+     */
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
 
     // protected static function newFactory(): OrderItemFactory
     // {

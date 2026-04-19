@@ -5,9 +5,9 @@ namespace Modules\Restaurants\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-// use Modules\Restaurants\Database\Factories\MealFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Meal extends Model
+class MealCategory extends Model
 {
     use HasFactory;
 
@@ -16,21 +16,15 @@ class Meal extends Model
      */
     protected $fillable = [
         'restaurant_id',
-        'menu_id',
-        'meal_category_id',
         'name',
-        'price',
-        'discount_price',
-        'description',
         'image',
-        'available',
     ];
 
     protected $appends = ['image_url'];
 
     public function getImageUrlAttribute()
     {
-        return $this->image ? asset('storage/' . $this->image) : asset('assets/default-meal.png');
+        return $this->image ? asset('storage/' . $this->image) : asset('assets/default-category.png');
     }
 
     public function restaurant(): BelongsTo
@@ -38,8 +32,8 @@ class Meal extends Model
         return $this->belongsTo(Restaurant::class);
     }
 
-    public function category(): BelongsTo
+    public function meals(): HasMany
     {
-        return $this->belongsTo(MealCategory::class, 'meal_category_id');
+        return $this->hasMany(Meal::class);
     }
 }

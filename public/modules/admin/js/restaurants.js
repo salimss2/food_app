@@ -183,6 +183,9 @@ function updateTableUI(restaurant, mode) {
     const blockIcon = getBlockIcon(restaurant.account_status);
     const blockBtnColor = (restaurant.account_status === 'Blocked') ? 'text-green-500 hover:text-green-700' : 'text-red-500 hover:text-red-700';
 
+    const state = (restaurant.status || 'closed').toLowerCase();
+    const accStatus = (restaurant.account_status || 'active').toLowerCase();
+
     const rowHTMLContent = `
         <td class="px-6 py-4">
             <div class="flex items-center">
@@ -224,9 +227,11 @@ function updateTableUI(restaurant, mode) {
         const existingRow = document.getElementById(`restaurant-row-${restaurant.id}`);
         if (existingRow) {
             existingRow.innerHTML = rowHTMLContent;
+            existingRow.setAttribute('data-state', state);
+            existingRow.setAttribute('data-account-status', accStatus);
         }
     } else {
-        const newRowHTML = `<tr id="restaurant-row-${restaurant.id}" class="hover:bg-gray-50 transition-colors">${rowHTMLContent}</tr>`;
+        const newRowHTML = `<tr id="restaurant-row-${restaurant.id}" data-state="${state}" data-account-status="${accStatus}" class="hover:bg-gray-50 transition-colors">${rowHTMLContent}</tr>`;
         tbody.insertAdjacentHTML('afterbegin', newRowHTML);
 
         const emptyRow = tbody.querySelector('tr td[colspan="6"]');
@@ -265,12 +270,15 @@ function getBlockIcon(status) {
 }
 
 function openEditModal(data) {
+    // 1. Open and Initialize FIRST
+    openModal('restaurantModal');
+
+    // 2. Populate data strictly using IDs AFTER reset
     document.getElementById('restaurant-modal-title').innerText = 'Edit Restaurant';
     document.getElementById('restaurantId').value = data.id || '';
     
     document.getElementById('methodContainer').innerHTML = '<input type="hidden" name="_method" value="PUT">';
 
-    // Populate data strictly using IDs
     document.getElementById('rName').value = data.name || '';
     document.getElementById('rCategory').value = data.category || 'Fast Food';
     document.getElementById('rAddress').value = data.location || '';
@@ -284,8 +292,6 @@ function openEditModal(data) {
     if (pwField) pwField.classList.add('hidden-el');
     document.getElementById('rPassword').removeAttribute('required');
     document.getElementById('rPassword').value = '';
-
-    openModal('restaurantModal');
 }
 
 function openDetailsModal(data) {
@@ -338,9 +344,12 @@ async function toggleState(id, btnEl) {
     if (result.success) {
         const row = document.getElementById(`restaurant-row-${id}`);
         if (row) {
+            const newState = result.is_open ? 'open' : 'closed';
+            row.setAttribute('data-state', newState);
+
             // Update the button HTML using the helper
             const container = btnEl.parentElement;
-            container.innerHTML = getStateButton(id, result.is_open ? 'open' : 'closed');
+            container.innerHTML = getStateButton(id, newState);
             
             // Also update the subtext in the name cell
             const subtext = row.querySelector('.res-status-subtext');
@@ -364,6 +373,9 @@ async function blockRestaurant(id, btnEl) {
     if (result.success) {
         const row = document.getElementById(`restaurant-row-${id}`);
         if (row) {
+            const newAccStatus = result.new_status.toLowerCase();
+            row.setAttribute('data-account-status', newAccStatus);
+
             // Update badge
             const badge = row.querySelector('.res-account-status-badge');
             if (badge) {
@@ -391,6 +403,40 @@ async function blockRestaurant(id, btnEl) {
 }
 
 /* ─── Filters & Helpers ─── */
+
+function filterRestaurants(filterType, btnEl) {
+    const tbody = document.getElementById('restaurantsTableBody');
+    if (!tbody) return;
+
+    const rows = tbody.querySelectorAll('tr[id^="restaurant-row-"]');
+    
+    // Update toolbar active classes
+    const buttons = document.querySelectorAll('#filterToolbar .filter-btn');
+    buttons.forEach(btn => {
+        btn.classList.remove('bg-primary', 'text-white', 'active-filter');
+        btn.classList.add('bg-white', 'text-gray-600');
+    });
+    
+    if (btnEl) {
+        btnEl.classList.remove('bg-white', 'text-gray-600');
+        btnEl.classList.add('bg-primary', 'text-white', 'active-filter');
+    }
+
+    rows.forEach(row => {
+        const state = row.getAttribute('data-state');
+        const accStatus = row.getAttribute('data-account-status');
+
+        let show = false;
+        if (filterType === 'all') show = true;
+        else if (filterType === 'open') show = (state === 'open');
+        else if (filterType === 'closed') show = (state === 'closed');
+        else if (filterType === 'active') show = (accStatus === 'active');
+        else if (filterType === 'inactive') show = (accStatus === 'inactive');
+        else if (filterType === 'blocked') show = (accStatus === 'blocked');
+
+        row.style.display = show ? '' : 'none';
+    });
+}
 
 document.addEventListener('DOMContentLoaded', function () {
     var searchInput = document.getElementById('restaurantSearch');

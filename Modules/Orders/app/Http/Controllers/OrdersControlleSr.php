@@ -1,6 +1,98 @@
-<?php
+<!-- <!-- 
 
 namespace Modules\Orders\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Modules\Orders\Models\Order;
+use Carbon\Carbon;
+
+class OrdersController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        return view('orders::index');
+    }
+
+    /**
+     * Display the Order Management Command Center.
+     */
+    public function commandCenter()
+    {
+        // 1. Fetch Orders for Kanban (Active)
+        $orders_new = Order::where('status', 'pending')->with('user')->orderBy('created_at', 'desc')->get();
+        $orders_accepted = Order::where('status', 'accepted')->with('user')->orderBy('created_at', 'desc')->get();
+        $orders_preparing = Order::where('status', 'preparing')->with('user')->orderBy('created_at', 'desc')->get();
+
+        // 2. Fetch Orders for History
+        $orders_history = Order::whereIn('status', ['delivered', 'canceled'])->with('user')->orderBy('created_at', 'desc')->limit(50)->get();
+
+        // 3. KPI Metrics
+        $kpi = [
+            'new_count' => Order::where('status', 'pending')->count(),
+            'preparing_count' => Order::where('status', 'preparing')->count(),
+            'delayed_count' => Order::whereNotIn('status', ['delivered', 'canceled'])
+                                    ->where('created_at', '<', Carbon::now()->subMinutes(20))
+                                    ->count(),
+            'today_sales' => Order::whereDate('created_at', Carbon::today())
+                                 ->where('status', 'delivered')
+                                 ->sum('total'),
+        ];
+
+        return view('orders::command-center', compact(
+            'orders_new', 
+            'orders_accepted', 
+            'orders_preparing', 
+            'orders_history',
+            'kpi'
+        ));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        return view('orders::create');
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request) {}
+
+    /**
+     * Show the specified resource.
+     */
+    public function show($id)
+    {
+        return view('orders::show');
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit($id)
+    {
+        return view('orders::edit');
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, $id) {}
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy($id) {}
+} -->
+<!-- 
+
+
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -105,4 +197,4 @@ class OrdersController extends Controller
     public function edit($id) {}
     public function update(Request $request, $id) {}
     public function destroy($id) {}
-}
+} --> -->

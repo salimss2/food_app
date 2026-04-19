@@ -1,56 +1,121 @@
 <?php
 
-namespace Modules\Orders\Http\Controllers;
+namespace Modules\Orders\Http\Controllers; // 🔥 هذا هو التعديل الأهم
 
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller; // استدعاء المتحكم الرئيسي
+use Modules\Orders\Models\Cart;
+use Modules\Orders\Models\CartItem;
 
 class CartController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    // 1. جلب محتويات السلة
+    public function index(Request $request)
     {
-        return view('orders::index');
+        $user = $request->user();
+        $cart = Cart::firstOrCreate(['user_id' => $user->id]);
+        $items = CartItem::where('cart_id', $cart->id)->get();
+
+        return response()->json([
+            'cart' => $cart,
+            'items' => $items
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    // 2. إضافة وجبة للسلة
+    public function add(Request $request)
     {
-        return view('orders::create');
+        $request->validate([
+            'meal_id' => 'required|integer',
+            'quantity' => 'required|integer|min:1',
+            'price' => 'nullable|numeric'
+        ]);
+
+        $user = $request->user();
+
+        $cart = Cart::firstOrCreate(['user_id' => $user->id]);
+
+        $price = $request->input('price', 1500);
+        $quantity = $request->input('quantity');
+        $subtotal = $price * $quantity;
+
+        /** @var CartItem|null $cartItem */
+        $cartItem = CartItem::where('cart_id', $cart->id)
+            ->where('meal_id', $request->meal_id)
+            ->first();
+
+        if ($cartItem) {
+            $cartItem->quantity += $quantity;
+            $cartItem->subtotal += $subtotal;
+            $cartItem->save();
+        } else {
+            CartItem::create([
+                'cart_id' => $cart->id,
+                'meal_id' => $request->meal_id,
+                'quantity' => $quantity,
+                'subtotal' => $subtotal
+            ]);
+        }
+
+        $cart->total = CartItem::where('cart_id', $cart->id)->sum('subtotal');
+        $cart->save();
+
+        return response()->json([
+            'message' => 'تمت الإضافة للسلة بنجاح! 🛒',
+            'cart_total' => $cart->total
+        ], 200);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request) {}
-
-    /**
-     * Show the specified resource.
-     */
-    public function show($id)
+    // 3. تحديث كمية وجبة في السلة
+    public function update(Request $request, $id)
     {
-        return view('orders::show');
+        $request->validate(['quantity' => 'required|integer|min:1']);
+
+        /** @var CartItem $cartItem */
+        $cartItem = CartItem::findOrFail($id);
+        $unitPrice = $cartItem->subtotal / $cartItem->quantity;
+
+        $cartItem->quantity = $request->quantity;
+        $cartItem->subtotal = $unitPrice * $request->quantity;
+        $cartItem->save();
+
+        /** @var Cart $cart */
+        $cart = Cart::find($cartItem->cart_id);
+        $cart->total = CartItem::where('cart_id', $cart->id)->sum('subtotal');
+        $cart->save();
+
+        return response()->json(['message' => 'تم التحديث']);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
+    // 4. حذف وجبة من السلة
+    public function remove($id)
     {
-        return view('orders::edit');
+        /** @var CartItem $cartItem */
+        $cartItem = CartItem::findOrFail($id);
+        $cart_id = $cartItem->cart_id;
+        $cartItem->delete();
+
+        /** @var Cart $cart */
+        $cart = Cart::find($cart_id);
+        $cart->total = CartItem::where('cart_id', $cart->id)->sum('subtotal');
+        $cart->save();
+
+        return response()->json(['message' => 'تم الحذف']);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id) {}
+    // 5. تفريغ السلة بالكامل
+    public function clear(Request $request)
+    {
+        $user = $request->user();
+        /** @var Cart|null $cart */
+        $cart = Cart::where('user_id', $user->id)->first();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id) {}
+        if ($cart) {
+            CartItem::where('cart_id', $cart->id)->delete();
+            $cart->total = 0;
+            $cart->save();
+        }
+
+        return response()->json(['message' => 'تم تفريغ السلة بنجاح']);
+    }
 }

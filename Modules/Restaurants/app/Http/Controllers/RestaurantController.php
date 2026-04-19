@@ -1,18 +1,21 @@
 <?php
 
-namespace Modules\Orders\Http\Controllers;
+namespace Modules\Restaurants\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Modules\Restaurants\Models\Restaurant;
 
-class OrderController extends Controller
+class RestaurantController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        return view('orders::index');
+        $restaurants = Restaurant::with(['menus.meals', 'meals', 'offers'])->get();
+
+        return response()->json($restaurants, 200);
     }
 
     /**
@@ -20,7 +23,7 @@ class OrderController extends Controller
      */
     public function create()
     {
-        return view('orders::create');
+        return view('restaurants::create');
     }
 
     /**
@@ -33,7 +36,7 @@ class OrderController extends Controller
      */
     public function show($id)
     {
-        return view('orders::show');
+        return view('restaurants::show');
     }
 
     /**
@@ -41,7 +44,7 @@ class OrderController extends Controller
      */
     public function edit($id)
     {
-        return view('orders::edit');
+        return view('restaurants::edit');
     }
 
     /**
