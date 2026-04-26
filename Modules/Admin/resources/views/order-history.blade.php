@@ -300,31 +300,62 @@
                                 <th scope="col" class="px-6 py-3 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="historyTableBody" class="divide-y divide-gray-200 bg-white">
-                            <!-- Populated by JS -->
+                        <tbody class="divide-y divide-gray-200 bg-white">
+                            @forelse($orders as $order)
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">#{{ $order->id }}</div>
+                                        <div class="text-xs text-gray-500">{{ $order->created_at->format('M d, Y - g:i A') }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-8 w-8 bg-gray-200 text-gray-600 rounded-full flex items-center justify-center font-bold text-xs uppercase">
+                                                {{ substr($order->user->name ?? 'U', 0, 2) }}
+                                            </div>
+                                            <div class="ml-3">
+                                                <div class="text-sm font-medium text-gray-900">{{ $order->user->name ?? 'Unknown Customer' }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ $order->restaurant->name ?? 'Unknown Restaurant' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                                        ${{ number_format($order->total, 2) }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if($order->status === 'delivered')
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                Delivered
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                Cancelled
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button onclick="viewHistoryDetails({{ $order->id }})" title="Trail" class="text-gray-400 hover:text-primary focus:outline-none bg-gray-50 hover:bg-gray-100 p-1.5 rounded transition-colors inline-block">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6">
+                                        <div class="p-12 flex flex-col items-center justify-center text-center border-t border-gray-200">
+                                            <h3 class="text-lg font-medium text-gray-900 mt-2">No history records found</h3>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
 
                 <!-- Pagination Placeholder -->
-                <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-                    <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                        <div>
-                            <p class="text-sm text-gray-700">Showing <span class="font-medium">1</span> to <span class="font-medium" id="historyCount">0</span> results</p>
-                        </div>
-                        <div>
-                            <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                                <a href="#" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20"><span class="sr-only">Previous</span>&laquo;</a>
-                                <a href="#" aria-current="page" class="relative z-10 inline-flex items-center bg-primary px-4 py-2 text-sm font-semibold text-white focus:z-20">1</a>
-                                <a href="#" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20"><span class="sr-only">Next</span>&raquo;</a>
-                            </nav>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Empty State -->
-                <div id="historyEmptyState" class="hidden-el p-12 flex flex-col items-center justify-center text-center border-t border-gray-200">
-                    <h3 class="text-lg font-medium text-gray-900 mt-2">No history records found</h3>
+                <div class="border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+                    {{ $orders->links() }}
                 </div>
             </div>
         </main>
@@ -403,6 +434,10 @@
 
     <!-- Scripts -->
     <script src="{{ asset('modules/admin/js/app.js') }}"></script>
-    <script src="{{ asset('modules/admin/js/order-history.js') }}"></script>
+    <script>
+        function viewHistoryDetails(orderId) {
+            alert('Audit Trail details for Order #' + orderId + ' will be shown here.');
+        }
+    </script>
 </body>
 </html>

@@ -54,9 +54,15 @@ class User extends Authenticatable
     }
 
     // 3. علاقة المطعم (تظهر فقط إذا كان المستخدم صاحب مطعم)
-    // public function restaurant() {
-    //     return $this->hasOne(Restaurant::class, 'user_id');
-    // }
+    public function restaurant()
+    {
+        return $this->hasOne(Restaurant::class, 'owner_id');
+    }
+
+    public function favorites()
+    {
+        return $this->hasMany(\Modules\Users\Models\Favorite::class);
+    }
 
 public function owner()
 {
@@ -65,11 +71,6 @@ public function owner()
 public function profile()
 {
     return $this->hasOne(Profile::class);
-}
-
-public function restaurant()
-{
-    return $this->hasOne(Restaurant::class, 'owner_id');
 }
 
 // دالة حذف بيانات المرتبطة

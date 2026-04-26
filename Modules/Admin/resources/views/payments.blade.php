@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Pending Payments - Admin Dashboard</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -279,20 +280,122 @@
                 </div>
             </div>
 
+            <!-- Quick Metrics -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <!-- Total Pending -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center space-x-4">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Pending Verification</p>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ $totalPending ?? 0 }}</h3>
+                    </div>
+                </div>
+
+                <!-- Pending Collection -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center space-x-4">
+                    <div class="p-3 rounded-full bg-indigo-100 text-indigo-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Pending Collection</p>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ $totalPendingCollection ?? 0 }}</h3>
+                    </div>
+                </div>
+
+                <!-- Total Canceled -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center space-x-4">
+                    <div class="p-3 rounded-full bg-gray-100 text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Canceled</p>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ $totalCanceled ?? 0 }}</h3>
+                    </div>
+                </div>
+
+                <!-- Total Processed -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center space-x-4">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Total Processed</p>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ $totalProcessed ?? 0 }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="mb-4 border-b border-gray-200 flex space-x-4">
+                <button onclick="switchTab('all')" id="tab-all" class="py-2 px-4 font-semibold text-sm border-b-2 text-primary border-primary transition-colors">All Payments</button>
+                <button onclick="switchTab('pending_refund')" id="tab-pending_refund" class="py-2 px-4 font-semibold text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors flex items-center space-x-2">
+                    <span>Pending Refunds</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">New</span>
+                </button>
+            </div>
+
             <!-- Filters & Table Card -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <!-- Filters -->
-                <div class="p-4 border-b border-gray-200 flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 bg-gray-50">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Filter by Date</label>
-                        <input type="date" id="filterDate" class="block w-full rounded border-gray-300 py-1.5 px-2 text-sm shadow-sm focus:ring-primary focus:border-primary bg-white">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Min Amount ($)</label>
-                        <input type="number" id="filterAmount" placeholder="e.g. 50" class="block w-full sm:w-32 rounded border-gray-300 py-1.5 px-2 text-sm shadow-sm focus:ring-primary focus:border-primary bg-white">
-                    </div>
-                    <div class="flex items-end">
-                        <button onclick="applyFilters()" class="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded text-sm hover:bg-gray-50 shadow-sm focus:outline-none mb-0.5">Filter</button>
+                <div class="p-4 border-b border-gray-200 bg-gray-50">
+                    <div class="flex flex-col sm:flex-row flex-wrap gap-3 items-end">
+
+                        <!-- From Date -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">From Date</label>
+                            <input type="date" id="filterFromDate" class="block rounded border-gray-300 py-1.5 px-2 text-sm shadow-sm focus:ring-primary focus:border-primary bg-white">
+                        </div>
+
+                        <!-- To Date -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">To Date</label>
+                            <input type="date" id="filterToDate" class="block rounded border-gray-300 py-1.5 px-2 text-sm shadow-sm focus:ring-primary focus:border-primary bg-white">
+                        </div>
+
+                        <!-- Min Amount -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Min Amount ($)</label>
+                            <input type="number" id="filterMinAmount" placeholder="e.g. 50" class="block w-28 rounded border-gray-300 py-1.5 px-2 text-sm shadow-sm focus:ring-primary focus:border-primary bg-white">
+                        </div>
+
+                        <!-- Order Status -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Order Status</label>
+                            <select id="filterOrderStatus" class="block w-48 rounded border-gray-300 py-1.5 px-2 text-sm shadow-sm focus:ring-primary focus:border-primary bg-white">
+                                <option value="all">All Order Status</option>
+                                <option value="pending_admin_approval">Pending Admin Approval</option>
+                                <option value="pending_driver_acceptance">Pending Driver Acceptance</option>
+                                <option value="driver_assigned">Driver Assigned</option>
+                                <option value="ready_for_pickup">Ready for Pickup</option>
+                                <option value="on_the_way">On the Way</option>
+                                <option value="delivered">Delivered</option>
+                                <option value="canceled">Canceled</option>
+                            </select>
+                        </div>
+
+                        <!-- Payment Status -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Payment Status</label>
+                            <select id="ajaxStatusFilter" class="block w-48 rounded border-gray-300 py-1.5 px-2 text-sm shadow-sm focus:ring-primary focus:border-primary bg-white">
+                                <option value="all">All Payment Status</option>
+                                <option value="pending_verification">Pending Verification</option>
+                                <option value="pending_collection">Pending Collection</option>
+                                <option value="completed">Completed</option>
+                                <option value="rejected">Rejected</option>
+                                <option value="canceled">Canceled</option>
+                                <option value="pending_refund">Pending Refund</option>
+                                <option value="refunded">Refunded</option>
+                            </select>
+                        </div>
+
+                        <!-- Loading Indicator -->
+                        <div id="loadingIndicator" class="hidden items-center space-x-2 text-sm text-gray-500 self-end pb-1">
+                            <svg class="animate-spin h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <span>Loading...</span>
+                        </div>
+
                     </div>
                 </div>
 
@@ -303,20 +406,30 @@
                             <tr>
                                 <th scope="col" class="px-6 py-3">Order ID / Date</th>
                                 <th scope="col" class="px-6 py-3">Customer</th>
+                                <th scope="col" class="px-6 py-3">Payment Method</th>
                                 <th scope="col" class="px-6 py-3">Total Amount</th>
                                 <th scope="col" class="px-6 py-3 text-center">Payment Proof</th>
-                                <th scope="col" class="px-6 py-3">Status</th>
+                                <th scope="col" class="px-6 py-3">Order Status</th>
+                                <th scope="col" class="px-6 py-3">Payment Status</th>
                                 <th scope="col" class="px-6 py-3 text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="paymentsTableBody" class="divide-y divide-gray-200 bg-white">
-                            <!-- JS Populated -->
+                            @include('admin::partials.payments-table-body', ['orders' => $orders])
                         </tbody>
                     </table>
                 </div>
 
+                <!-- Pagination -->
+                @if ($orders->hasPages())
+                <div class="p-4 border-t border-gray-200 bg-white">
+                    {{ $orders->links() }}
+                </div>
+                @endif
+
                 <!-- Empty State (Hidden initially) -->
-                <div id="emptyState" class="hidden-el p-12 flex flex-col items-center justify-center text-center">
+                @if ($orders->isEmpty())
+                <div id="emptyState" class="p-12 flex flex-col items-center justify-center text-center">
                     <div class="bg-gray-50 p-4 rounded-full mb-4">
                         <svg class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -325,6 +438,7 @@
                     <h3 class="text-lg font-medium text-gray-900">No pending payments</h3>
                     <p class="mt-1 text-sm text-gray-500">All payments have been processed or no matching records found.</p>
                 </div>
+                @endif
             </div>
         </main>
     </div>
@@ -343,6 +457,39 @@
                     </div>
                     <div class="bg-black p-2 flex justify-center items-center min-h-[50vh]">
                         <img id="fullImage" src="" alt="Proof" class="max-w-full max-h-[80vh] object-contain">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Order Modal -->
+    <div id="cancelOrderModal" class="relative z-50 hidden-el" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity modal-overlay" onclick="closeModal('cancelOrderModal')"></div>
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md modal-content">
+                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+                                <h3 class="text-base font-semibold leading-6 text-gray-900" id="cancelModalTitle">Cancel Order</h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-gray-500 mb-3">Please provide a reason for canceling this order. This action cannot be undone.</p>
+                                    <textarea id="cancellationReasonInput" rows="3" class="w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border" placeholder="Cancellation reason..."></textarea>
+                                    <p id="cancellationReasonError" class="text-xs text-red-600 mt-1 hidden-el">Reason is required.</p>
+                                    <input type="hidden" id="cancelOrderId">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                        <button type="button" onclick="submitCancelOrder()" class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto transition-colors">Confirm Cancellation</button>
+                        <button type="button" onclick="closeModal('cancelOrderModal')" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto transition-colors">Cancel</button>
                     </div>
                 </div>
             </div>

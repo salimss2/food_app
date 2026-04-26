@@ -10,11 +10,13 @@ use Modules\Restaurants\Http\Controllers\RestaurantController;
 
 Route::prefix('v1')->group(function () {
     Route::get('/restaurants', [RestaurantController::class, 'index']);
+    Route::get('/restaurants/{id}', [RestaurantController::class, 'show']);
 });
 
 Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
     Route::get('profile', [ProfileController::class, 'show']);
     Route::post('profile/update', [ProfileController::class, 'update']);
+    Route::patch('profile/toggle-restaurant-status', [ProfileController::class, 'toggleStatus']);
 
     // Meals
     Route::get('meals', [MealController::class, 'index']);
@@ -26,6 +28,8 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
     // Categories
     Route::get('categories', [CategoryController::class, 'index']);
     Route::post('categories', [CategoryController::class, 'store']);
+    Route::post('categories/{id}', [CategoryController::class, 'update']); // Using POST for multipart support
+    Route::delete('categories/{id}', [CategoryController::class, 'destroy']);
 
     
 });

@@ -186,10 +186,12 @@ function updateTableUI(restaurant, mode) {
     const state = (restaurant.status || 'closed').toLowerCase();
     const accStatus = (restaurant.account_status || 'active').toLowerCase();
 
+    const logoSrc = restaurant.logo_url || (restaurant.logo ? (restaurant.logo.includes('/') ? `/storage/${restaurant.logo}` : `/storage/restaurants/logos/${restaurant.logo}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(restaurant.name)}&background=random`);
+
     const rowHTMLContent = `
         <td class="px-6 py-4">
             <div class="flex items-center">
-                <img class="res-logo h-10 w-10 rounded-lg border border-gray-200 mr-3 object-cover" src="${restaurant.logo_url}" alt="">
+                <img class="res-logo h-10 w-10 rounded-lg border border-gray-200 mr-3 object-cover" src="${logoSrc}" alt="">
                 <div>
                     <div class="res-name-text text-sm font-medium text-gray-900">${restaurant.name}</div>
                     <div class="res-status-subtext text-xs text-gray-500">${restaurant.status === 'open' ? 'Open' : 'Closed'}</div>
@@ -304,7 +306,8 @@ function openDetailsModal(data) {
     
     var logoEl = document.getElementById('detailResLogo');
     if (logoEl) {
-        logoEl.src = data.logo_url || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(data.name) + '&background=random');
+        const logoSrc = data.logo_url || (data.logo ? (data.logo.includes('/') ? `/storage/${data.logo}` : `/storage/restaurants/logos/${data.logo}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`);
+        logoEl.src = logoSrc;
     }
 
     openModal('restaurantDetailsModal');

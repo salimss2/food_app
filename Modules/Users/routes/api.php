@@ -11,9 +11,9 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
 
 // مسارات السائق بدون حماية التوكن مؤقتاً للتأكد من عمل الموديول
 Route::prefix('v1/users/driver')->group(function () {
-    
+
     Route::post('/update-status', [DriverStatusController::class, 'updateStatus']);
-    
+
     // مسار تجريبي لجلب الحالة (GET)
     Route::get('/profile-status', [DriverStatusController::class, 'getProfile']);
 });

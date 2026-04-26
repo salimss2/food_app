@@ -353,7 +353,7 @@
                                     <td class="px-6 py-4">
                                         <div class="flex items-center">
                                             <img class="res-logo h-10 w-10 rounded-lg border border-gray-200 mr-3 object-cover" 
-                                                 src="{{ $restaurant->logo_url }}" alt="">
+                                                 src="{{ asset('storage/' . (str_contains($restaurant->logo, '/') ? $restaurant->logo : 'restaurants/logos/' . $restaurant->logo)) }}" alt="">
                                             <div>
                                                 <div class="res-name-text text-sm font-medium text-gray-900">{{ $restaurant->name }}</div>
                                                 <div class="res-status-subtext text-xs text-gray-500">{{ $restaurant->status === 'open' ? 'Open' : 'Closed' }}</div>

@@ -280,7 +280,70 @@
 
             <!-- Grouped List -->
             <div id="scheduledGroupsContainer" class="space-y-8">
-                <!-- Javascript will populate this with grouped orders -->
+                @forelse($groupedOrders as $date => $orders)
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider relative pl-4">
+                                <span class="absolute left-0 top-1/2 -mt-1.5 w-3 h-3 bg-indigo-500 rounded-full"></span>
+                                {{ \Carbon\Carbon::parse($date)->format('l, F j, Y') }}
+                            </h3>
+                            <span class="text-xs font-semibold bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full">
+                                {{ $orders->count() }} Orders
+                            </span>
+                        </div>
+                        <div class="divide-y divide-gray-100">
+                            @foreach($orders as $order)
+                                @php
+                                    $diffInMinutes = \Carbon\Carbon::now()->diffInMinutes(\Carbon\Carbon::parse($order->scheduled_at), false);
+                                    $nearingDispatch = ($diffInMinutes > 0 && $diffInMinutes <= 60);
+                                @endphp
+                                <div class="p-6 hover:bg-gray-50 transition-colors flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 {{ $nearingDispatch ? 'bg-orange-50/50' : '' }}">
+                                    <!-- Left Section -->
+                                    <div class="flex items-center space-x-4 w-full sm:w-1/3">
+                                        <div class="flex-shrink-0 bg-indigo-50 p-2 rounded-lg text-indigo-600 border border-indigo-100 {{ $nearingDispatch ? 'text-orange-600 bg-orange-100 border-orange-200 animate-pulse' : '' }}">
+                                            <p class="text-xs font-semibold text-center leading-tight">
+                                                <span class="block text-[10px] text-gray-500 uppercase">Time</span>
+                                                {{ \Carbon\Carbon::parse($order->scheduled_at)->format('g:i A') }}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-semibold text-gray-900 border-b border-gray-100 pb-0.5 inline-block">
+                                                #{{ $order->id }}
+                                            </p>
+                                            <p class="text-xs text-gray-500 mt-1 flex items-center">
+                                                <svg class="h-3.5 w-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                                {{ $order->user->name ?? 'Unknown Customer' }}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Middle Section (Restaurant & Status) -->
+                                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-1/2 space-y-3 sm:space-y-0">
+                                        <div class="w-full sm:w-1/2">
+                                            <span class="text-[10px] uppercase font-bold text-gray-400 block mb-0.5">Pickup Location</span>
+                                            <p class="text-sm font-medium text-gray-800">{{ $order->restaurant->name ?? 'Unknown Restaurant' }}</p>
+                                        </div>
+                                        <div class="w-full sm:w-1/2 text-left sm:text-right">
+                                            @if($nearingDispatch)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-orange-100 text-orange-800 border border-orange-200">
+                                                    Dispatch in {{ $diffInMinutes }}m
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @empty
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 flex flex-col items-center justify-center text-center">
+                        <svg class="h-12 w-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <h3 class="text-lg font-medium text-gray-900">No scheduled orders</h3>
+                        <p class="mt-1 text-sm text-gray-500">There are no orders set for a future delivery time.</p>
+                    </div>
+                @endforelse
             </div>
 
         </main>
@@ -353,6 +416,5 @@
 
     <!-- Scripts -->
     <script src="{{ asset('modules/admin/js/app.js') }}"></script>
-    <script src="{{ asset('modules/admin/js/scheduled-orders.js') }}"></script>
 </body>
 </html>

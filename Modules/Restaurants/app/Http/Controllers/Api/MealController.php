@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Modules\Restaurants\Models\Meal;
+use Modules\Restaurants\Http\Resources\MealResource;
 
 class MealController extends Controller
 {
@@ -33,7 +34,7 @@ class MealController extends Controller
         ob_clean();
         return response()->json([
             'status' => true,
-            'data' => $meals,
+            'data' => MealResource::collection($meals),
         ]);
     }
 
@@ -67,8 +68,14 @@ class MealController extends Controller
         $mealData['available'] = true;
 
         if ($request->hasFile('image')) {
-            $path = Storage::disk('public')->put('restaurants/meals', $request->file('image'));
-            $mealData['image'] = $path;
+            $file = $request->file('image');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            
+            // Store in the meals directory within the public disk
+            $file->storeAs('restaurants/meals', $filename, 'public');
+            
+            // Save the full path to the database
+            $mealData['image'] = 'restaurants/meals/' . $filename;
         }
 
         $meal = Meal::create($mealData);
@@ -77,7 +84,7 @@ class MealController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Meal created successfully',
-            'data' => $meal->load('category'),
+            'data' => new MealResource($meal->load('category')),
         ]);
     }
 
@@ -106,11 +113,19 @@ class MealController extends Controller
         $mealData = $request->only(['name', 'description', 'price', 'discount_price', 'meal_category_id']);
 
         if ($request->hasFile('image')) {
-            if ($meal->image && Storage::disk('public')->exists($meal->image)) {
-                Storage::disk('public')->delete($meal->image);
+            // Delete the old image if it exists
+            if ($meal->image) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($meal->image);
             }
-            $path = Storage::disk('public')->put('restaurants/meals', $request->file('image'));
-            $mealData['image'] = $path;
+            
+            $file = $request->file('image');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            
+            // Store the new image
+            $file->storeAs('restaurants/meals', $filename, 'public');
+            
+            // Update the path in the database
+            $mealData['image'] = 'restaurants/meals/' . $filename;
         }
 
         $meal->update($mealData);
@@ -119,7 +134,7 @@ class MealController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Meal updated successfully',
-            'data' => $meal->load('category'),
+            'data' => new MealResource($meal->load('category')),
         ]);
     }
 

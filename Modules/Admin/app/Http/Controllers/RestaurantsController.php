@@ -89,13 +89,16 @@ class RestaurantsController extends Controller
                 }
 
                 // 2. Handle Logo
-                $logoPath = null;
-                if ($request->hasFile('logo')) {
-                    $file = $request->file('logo');
-                    $filename = time() . '_' . $file->getClientOriginalName();
-                    $file->storeAs('public/restaurants/logos', $filename);
-                    $logoPath = $filename;
-                }
+$logoPath = null;
+if ($request->hasFile('logo')) {
+    $file = $request->file('logo');
+    $filename = time() . '_' . $file->getClientOriginalName();
+    
+    // التعديل هنا: حددنا القرص 'public' صراحة لضمان ذهاب الصورة للمكان الصحيح
+    $file->storeAs('restaurants/logos', $filename, 'public');
+    
+    $logoPath = 'restaurants/logos/' . $filename;
+}
 
                 // 3. Create Restaurant
                 $restaurant = Restaurant::create([
@@ -195,17 +198,23 @@ class RestaurantsController extends Controller
                 }
 
                 // Handle Logo Update
-                if ($request->hasFile('logo')) {
-                    // Delete old logo
-                    if ($restaurant->logo) {
-                        Storage::delete('public/restaurants/logos/' . $restaurant->logo);
-                    }
-                    
-                    $file = $request->file('logo');
-                    $filename = time() . '_' . $file->getClientOriginalName();
-                    $file->storeAs('public/restaurants/logos', $filename);
-                    $restaurant->logo = $filename;
-                }
+if ($request->hasFile('logo')) {
+    // Delete old logo (حذف الصورة القديمة بشكل صحيح)
+    if ($restaurant->logo) {
+        $oldLogoPath = str_contains($restaurant->logo, '/') ? $restaurant->logo : 'restaurants/logos/' . $restaurant->logo;
+        // استخدام قرص public للحذف
+        \Illuminate\Support\Facades\Storage::disk('public')->delete($oldLogoPath);
+    }
+    
+    $file = $request->file('logo');
+    $filename = time() . '_' . $file->getClientOriginalName();
+    
+    // التخزين في المسار الصحيح
+    $file->storeAs('restaurants/logos', $filename, 'public');
+    
+    // إسناد المسار الجديد للمطعم
+    $restaurant->logo = 'restaurants/logos/' . $filename;
+}
 
                 // Update Restaurant
                 $restaurant->update([

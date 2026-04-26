@@ -13,10 +13,24 @@ class Favorite extends Model
     /**
      * The attributes that are mass assignable.
      */
-    protected $fillable = [];
+    protected $fillable = [
+        'user_id',
+        'restaurant_id',
+        'meal_id',
+    ];
 
-    // protected static function newFactory(): FavoriteFactory
-    // {
-    //     // return FavoriteFactory::new();
-    // }
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class);
+    }
+
+    public function restaurant()
+    {
+        return $this->belongsTo(\Modules\Restaurants\Models\Restaurant::class);
+    }
+
+    public function meal()
+    {
+        return $this->belongsTo(\Modules\Restaurants\Models\Meal::class);
+    }
 }

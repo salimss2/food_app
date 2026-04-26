@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Modules\Restaurants\Http\Resources\RestaurantResource;
 
 class ProfileController extends Controller
 {
@@ -19,20 +20,15 @@ class ProfileController extends Controller
         $user = Auth::user();
         $user->load('restaurant');
 
-        $data = [
-            'name' => $user->name,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'restaurant_name' => $user->restaurant ? $user->restaurant->name : '',
-            'logo_url' => ($user->restaurant && $user->restaurant->logo) 
-                ? asset('storage/' . $user->restaurant->logo) 
-                : asset('assets/default-logo.png'),
-        ];
-
         ob_clean();
         return response()->json([
             'status' => true,
-            'data' => $data,
+            'data' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'restaurant' => new RestaurantResource($user->restaurant),
+            ],
         ]);
     }
 
@@ -94,21 +90,43 @@ class ProfileController extends Controller
         $user->refresh();
         $user->load('restaurant');
 
-        $data = [
-            'name' => $user->name,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'restaurant_name' => $user->restaurant ? $user->restaurant->name : '',
-            'logo_url' => ($user->restaurant && $user->restaurant->logo) 
-                ? asset('storage/' . $user->restaurant->logo) 
-                : asset('assets/default-logo.png'),
-        ];
-
         ob_clean();
         return response()->json([
             'status' => true,
             'message' => 'Profile updated successfully',
-            'data' => $data,
+            'data' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'restaurant' => new RestaurantResource($user->restaurant),
+            ],
+        ]);
+    }
+
+    /**
+     * Toggle the status of the restaurant (open/closed).
+     */
+    public function toggleStatus()
+    {
+        $user = Auth::user();
+        $restaurant = $user->restaurant;
+
+        if (!$restaurant) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Restaurant not found',
+            ], 404);
+        }
+
+        // Toggle status between 'open' and 'closed'
+        $newStatus = ($restaurant->status === 'open') ? 'closed' : 'open';
+        $restaurant->update(['status' => $newStatus]);
+
+        ob_clean();
+        return response()->json([
+            'status' => true,
+            'message' => 'Restaurant status toggled successfully',
+            'data' => new RestaurantResource($restaurant),
         ]);
     }
 }

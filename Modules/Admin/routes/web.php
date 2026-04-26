@@ -7,6 +7,8 @@ use Modules\Admin\Http\Controllers\UserController;
 use Modules\Admin\Http\Controllers\DriverController;
 use Modules\Admin\Http\Controllers\RestaurantsController;
 use Modules\Admin\Http\Controllers\DashboardController;
+use Modules\Admin\Http\Controllers\AdminOrderController;
+use Modules\Admin\Http\Controllers\AdminPaymentController;
 
 
 // Route::get('/admin/login', [AuthController::class, 'showLoginForm'])->name('admin.login');
@@ -41,6 +43,23 @@ Route::prefix('admin')->middleware(['auth','role:System Admin'])->group(function
     Route::resource('drivers', DriverController::class)->names('admin.drivers')->except(['create', 'edit']);
     Route::get('/drivers/{id}/details', [DriverController::class, 'show'])->name('admin.drivers.details');
     Route::post('/drivers/toggle-availability/{id}', [DriverController::class, 'toggleAvailability'])->name('admin.drivers.toggle-availability');
+
+    // Admin Orders
+    Route::get('/orders', [AdminOrderController::class, 'activeOrders'])->name('admin.orders.index');
+    Route::get('/scheduled-orders', [AdminOrderController::class, 'scheduledOrders'])->name('admin.scheduled-orders.index');
+    Route::get('/order-history', [AdminOrderController::class, 'orderHistory'])->name('admin.order-history.index');
+    Route::post('/orders/{id}/force-cancel', [AdminOrderController::class, 'forceCancel'])->name('admin.orders.force-cancel');
+    Route::post('/orders/{id}/reassign', [AdminOrderController::class, 'reassignDriver'])->name('admin.orders.reassign');
+    Route::post('/orders/{id}/approve', [AdminOrderController::class, 'approvePayment'])->name('admin.orders.approve');
+    Route::post('/orders/{id}/reject', [AdminOrderController::class, 'rejectPayment'])->name('admin.orders.reject');
+
+    // Payments
+    Route::get('/payments', [AdminPaymentController::class, 'index'])->name('admin.payments.index');
+    Route::get('/payments/filter', [AdminPaymentController::class, 'filter'])->name('admin.payments.filter');
+    Route::patch('/payments/{id}/approve', [AdminPaymentController::class, 'approve'])->name('admin.payments.approve');
+    Route::patch('/payments/{id}/reject', [AdminPaymentController::class, 'reject'])->name('admin.payments.reject');
+    Route::patch('/payments/{id}/cancel', [AdminPaymentController::class, 'cancel'])->name('admin.payments.cancel');
+    Route::patch('/payments/{id}/refund', [AdminPaymentController::class, 'markAsRefunded'])->name('admin.payments.refund');
 });
 
 
@@ -52,7 +71,6 @@ Route::prefix('admin')->group(function () {
     Route::get('/forgot-password', function () { return view('admin::forgot-password'); })->name('admin.forgot-password');
     Route::get('/commissions', function () { return view('admin::commissions'); })->name('admin.commissions.index');
     Route::get('/settings', function () { return view('admin::settings'); })->name('admin.settings.index');
-    Route::get('/order-history', function () { return view('admin::order-history'); })->name('admin.order-history.index');
     Route::get('/reports', function () { return view('admin::reports'); })->name('admin.reports.index');
     Route::get('/welcome', function () { return view('admin::welcome'); })->name('admin.welcome');
     Route::get('/reset-password', function () { return view('admin::reset-password'); })->name('admin.reset-password');
@@ -65,7 +83,6 @@ Route::prefix('admin')->group(function () {
     Route::get('/notification-history', function () { return view('admin::notification-history'); })->name('admin.notification-history.index');
     Route::get('/restaurant-details', function () { return view('admin::restaurant-details'); })->name('admin.restaurant-details.index');
     Route::get('/withdrawals', function () { return view('admin::withdrawals'); })->name('admin.withdrawals.index');
-    Route::get('/scheduled-orders', function () { return view('admin::scheduled-orders'); })->name('admin.scheduled-orders.index');
     Route::get('/register', function () { return view('admin::register'); })->name('admin.register');
     Route::get('/otp-verification', function () { return view('admin::otp-verification'); })->name('admin.otp-verification');
     Route::get('/discounts', function () { return view('admin::discounts'); })->name('admin.discounts.index');
@@ -74,6 +91,4 @@ Route::prefix('admin')->group(function () {
     Route::get('/scheduled-notifications', function () { return view('admin::scheduled-notifications'); })->name('admin.scheduled-notifications.index');
     Route::get('/commissions-restaurant', function () { return view('admin::commissions-restaurant'); })->name('admin.commissions-restaurant.index');
     Route::get('/roles-permissions', function () { return view('admin::roles-permissions'); })->name('admin.roles-permissions.index');
-    Route::get('/payments', function () { return view('admin::payments'); })->name('admin.payments.index');
-    Route::get('/orders', function () { return view('admin::orders'); })->name('admin.orders.index');
 });

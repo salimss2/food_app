@@ -5,6 +5,7 @@ namespace Modules\Orders\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 // use Modules\Orders\Database\Factories\OrderItemFactory;
+use Modules\Restaurants\Models\Meal;
 
 class OrderItem extends Model
 {
@@ -26,6 +27,14 @@ class OrderItem extends Model
     public function order()
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * العلاقة: عنصر الطلب ينتمي لوجبة واحدة.
+     */
+    public function meal()
+    {
+        return $this->belongsTo(Meal::class);
     }
 
     // protected static function newFactory(): OrderItemFactory

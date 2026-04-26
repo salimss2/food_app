@@ -13,10 +13,22 @@ class Payment extends Model
     /**
      * The attributes that are mass assignable.
      */
-    protected $fillable = [];
+    protected $fillable = [
+        'order_id',
+        'payment_method',
+        'total_amount',
+        'currency_type',
+        'payment_status',
+        'payment_date',
+    ];
+
+    public function order()
+    {
+        return $this->belongsTo(\Modules\Orders\Models\Order::class);
+    }
 
     public function proof()
-{
-    return $this->hasOne(PaymentProof::class);
-}
+    {
+        return $this->hasOne(PaymentProof::class);
+    }
 }

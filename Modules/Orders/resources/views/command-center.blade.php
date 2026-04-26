@@ -1,40 +1,104 @@
-# walkthrough - Integrated Order Management Command Center
+@extends('layouts.admin')
 
-The "Order Management Command Center" is now fully integrated into the core project architecture. It functions as a native part of the Admin Panel, sharing the same layout, sidebar, and design system while delivering the specialized "Command Center" vision.
+@section('content')
+<div class="container mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">غرفة العمليات - Command Center</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- New Orders Column -->
+        <div class="bg-gray-100 rounded-lg p-4">
+            <h2 class="text-lg font-semibold mb-3 border-b pb-2">جديد (<span id="new-orders-count">{{ $kpi['new_count'] ?? 0 }}</span>)</h2>
+            <div id="kanban-new-orders" class="space-y-3">
+                @if(isset($orders_new))
+                    @foreach($orders_new as $order)
+                        <div class="bg-white p-3 rounded shadow-sm border-l-4 border-blue-500" id="order-card-{{ $order->id }}">
+                            <div class="flex justify-between">
+                                <span class="font-bold">#{{ $order->id }}</span>
+                                <span class="text-sm text-gray-500">{{ $order->created_at->format('H:i') }}</span>
+                            </div>
+                            <div class="text-sm mt-2">{{ $order->user->name ?? 'عميل' }}</div>
+                            <div class="font-bold mt-1">{{ $order->total }} ريال</div>
+                        </div>
+                    @endforeach
+                @endif
+            </div>
+        </div>
 
-## Key Accomplishments
+        <!-- Accepted Orders Column -->
+        <div class="bg-indigo-50 rounded-lg p-4">
+            <h2 class="text-lg font-semibold mb-3 border-b pb-2">تم القبول</h2>
+            <div id="kanban-accepted-orders" class="space-y-3">
+                <!-- Data here -->
+            </div>
+        </div>
 
-### 1. Seamless Architectural Integration
-- **Master Layout Extension:** The view now correctly extends `layouts.admin` and utilizes `@section('content')`, ensuring that the global Navbar and Sidebar are always present.
-- **Tailwind CSS Refactor:** Replaced the bespoke dark theme with a clean, Tailwind-based design that harmonizes with the rest of the Admin Panel.
-- **Side Panel Optimization:** The glide-in Side detail panel now uses Tailwind and properly overlays the main content area with a backdrop.
+        <!-- Preparing Orders Column -->
+        <div class="bg-orange-50 rounded-lg p-4">
+            <h2 class="text-lg font-semibold mb-3 border-b pb-2">قيد التحضير</h2>
+            <div id="kanban-preparing-orders" class="space-y-3">
+                <!-- Data here -->
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
 
-### 2. Global Navigation Update
-- **Sidebar Integration:** Added a permanent "غرفة العمليات" (Command Center) link under the **Orders** category in the main sidebar file.
-- **Live Indicator:** Added a subtle "Live" pulse badge to the sidebar link to emphasize the real-time nature of the command center.
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const restaurantId = "{{ auth()->user()->restaurant_id ?? '' }}"; // Assuming user context has restaurant_id
+    
+    if(restaurantId && typeof Echo !== 'undefined') {
+        const channelName = 'private-restaurant.' + restaurantId;
 
-### 3. Data Wiring & Logic
-- **Real-time Queries:** The controller now fetches live data from the `orders` table using Eloquent.
-- **Status Mapping:** Implemented the approved 3-column Kanban mapping:
-    - **جديد (New):** `pending` status.
-    - **تم القبول (Accepted):** `accepted` status.
-    - **قيد التحضير (Preparing):** `preparing` status.
-- **History & Scheduled:** The History tab now displays `delivered` and `canceled` orders, while the Scheduled tab is structured to handle future service times.
-- **Calculated KPIs:** Metrics like "today's sales" and "delayed orders" are now calculated dynamically.
+        Echo.private(channelName)
+            .listen('.OrderCreated', (e) => {
+                console.log('New Order Received via Echo!', e);
+                
+                // Update KPI Count
+                const countEl = document.getElementById('new-orders-count');
+                if(countEl) {
+                    countEl.innerText = parseInt(countEl.innerText) + 1;
+                }
 
-## Visual Representation
+                // Render New Order Card dynamically
+                const orderData = e;
+                const newCard = `
+                    <div class="bg-white p-3 rounded shadow-sm border-l-4 border-blue-500 animate-pulse" id="order-card-${orderData.id}">
+                        <div class="flex justify-between">
+                            <span class="font-bold">#${orderData.id}</span>
+                            <span class="text-sm text-green-500 font-bold">الآن</span>
+                        </div>
+                        <div class="text-sm mt-2">${orderData.user ? orderData.user.name : 'عميل'}</div>
+                        <div class="font-bold mt-1">${orderData.total} ريال</div>
+                    </div>
+                `;
 
-![Integrated Command Center Mockup](C:\Users\TYC\.gemini\antigravity\brain\c619e4b0-dc98-40cc-b6f7-f25701b88536\order_management_command_center_mockup_1776376586701.png)
-*(Note: Mockup reflects the vision; the final implementation matches the project's Tailwind theme.)*
-
-## Technical Summary
-
-| File | Change |
-| :--- | :--- |
-| [sidebar.blade.php](file:///f:/admin_dashboard/Backups/3/food_app/resources/views/layouts/sidebar.blade.php) | Added global sidebar link. |
-| [OrdersController.php](file:///f:/admin_dashboard/Backups/3/food_app/Modules/Orders/app/Http/Controllers/OrdersController.php) | Implemented real data fetching and status mapping. |
-| [Order.php](file:///f:/admin_dashboard/Backups/3/food_app/Modules/Orders/app/Models/Order.php) | Added `user` relationship for data binding. |
-| [command-center.blade.php](file:///f:/admin_dashboard/Backups/3/food_app/Modules/Orders/resources/views/command-center.blade.php) | Refactored to extend master layout and use Tailwind. |
-
-> [!IMPORTANT]
-> The Command Center is now reachable via the **Sidebar** or directly at `/orders-command-center`. It is fully responsive and localized in Arabic.
+                const kanbanContainer = document.getElementById('kanban-new-orders');
+                if(kanbanContainer) {
+                    kanbanContainer.insertAdjacentHTML('afterbegin', newCard);
+                    
+                    // Stop pulsing after 3 seconds
+                    setTimeout(() => {
+                        const cardElement = document.getElementById('order-card-' + orderData.id);
+                        if(cardElement) {
+                            cardElement.classList.remove('animate-pulse');
+                        }
+                    }, 3000);
+                }
+            });
+    } else {
+        console.warn("Laravel Echo is not defined or Restaurant ID is missing. Falling back to polling...");
+        
+        // Simple JS polling fallback (every 10 seconds) if Echo isn't configured yet
+        setInterval(() => {
+            fetch('/api/v1/orders/check-new') // Custom polling endpoint logic
+                .then(res => res.json())
+                .then(data => {
+                    // Logic to process fetched new orders
+                }).catch(err => console.error("Polling error", err));
+        }, 10000);
+    }
+});
+</script>
+@endsection

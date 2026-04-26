@@ -5,6 +5,7 @@ namespace Modules\Orders\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+use Modules\Restaurants\Models\Meal;
 /**
  * @mixin \Illuminate\Database\Eloquent\Builder
  */
@@ -23,4 +24,8 @@ class CartItem extends Model
     {
         return $this->belongsTo(Cart::class);
     }
+    public function meal()
+{
+    return $this->belongsTo(Meal::class, 'meal_id');
+}
 }

@@ -32,13 +32,19 @@ class Restaurant extends Model
     public function getLogoUrlAttribute()
     {
         if ($this->logo) {
-            return asset('storage/restaurants/logos/' . $this->logo);
+            $path = str_contains($this->logo, '/') ? $this->logo : 'restaurants/logos/' . $this->logo;
+            return asset('storage/' . $path);
         }
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random';
     }
 
 
     protected $guarded = [];
+
+    public function mealCategories()
+    {
+        return $this->hasMany(MealCategory::class);
+    }
 
     public function menus()
     {

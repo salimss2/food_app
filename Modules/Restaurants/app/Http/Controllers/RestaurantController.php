@@ -5,6 +5,7 @@ namespace Modules\Restaurants\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Modules\Restaurants\Models\Restaurant;
+use Modules\Restaurants\Http\Resources\RestaurantResource;
 
 class RestaurantController extends Controller
 {
@@ -13,9 +14,9 @@ class RestaurantController extends Controller
      */
     public function index()
     {
-        $restaurants = Restaurant::with(['menus.meals', 'meals', 'offers'])->get();
+        $restaurants = Restaurant::with(['meals', 'offers'])->get();
 
-        return response()->json($restaurants, 200);
+        return RestaurantResource::collection($restaurants);
     }
 
     /**
@@ -29,14 +30,21 @@ class RestaurantController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request) {}
+    public function store(Request $request)
+    {
+    }
 
     /**
      * Show the specified resource.
      */
     public function show($id)
     {
-        return view('restaurants::show');
+        $restaurant = Restaurant::with(['mealCategories', 'meals'])->findOrFail($id);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => new RestaurantResource($restaurant)
+        ]);
     }
 
     /**
@@ -50,10 +58,14 @@ class RestaurantController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id) {}
+    public function update(Request $request, $id)
+    {
+    }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id) {}
+    public function destroy($id)
+    {
+    }
 }
