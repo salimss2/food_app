@@ -18,30 +18,34 @@ class DeliveryController extends Controller
         $driverId = $request->user()->id; // Assuming user auth is driver
 
         try {
-            $order = DB::transaction(function () use ($id, $driverId) {
-                // Fetch with pessimistic locking to prevent race conditions
-                $lockedOrder = Order::where('id', $id)->lockForUpdate()->first();
+            // Atomic UPDATE to prevent race conditions
+            $updated = Order::where('id', $id)
+                ->whereNull('driver_id')
+                ->where('status', 'pending_driver_acceptance')
+                ->update([
+                    'driver_id' => $driverId,
+                    'status' => 'driver_assigned'
+                ]);
 
-                if (!$lockedOrder) {
+            if ($updated === 0) {
+                // If update failed, check why to provide a graceful error
+                $order = Order::find($id);
+                
+                if (!$order) {
                     abort(404, 'الطلب غير موجود');
                 }
-
-                if ($lockedOrder->driver_id !== null) {
-                    // Order is already taken
-                    abort(400, 'عذرًا، تم قبول هذا الطلب من قبل مندوب آخر');
+                
+                if ($order->driver_id !== null) {
+                    abort(400, 'عذراً، قام موصل آخر بقبول هذا الطلب قبلك.');
                 }
-
-                if ($lockedOrder->status !== 'pending_driver_acceptance') {
+                
+                if ($order->status !== 'pending_driver_acceptance') {
                     abort(400, 'الطلب ليس في حالة انتظار قبول المندوب');
                 }
+            }
 
-                // Update order driver and status
-                $lockedOrder->driver_id = $driverId;
-                $lockedOrder->status = 'driver_assigned'; 
-                $lockedOrder->save();
-
-                return $lockedOrder;
-            });
+            // Fetch the successfully claimed order
+            $order = Order::find($id);
 
             return response()->json([
                 'message' => 'تم تعيين الطلب لك بنجاح',

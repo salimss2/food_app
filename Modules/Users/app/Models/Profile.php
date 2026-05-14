@@ -15,6 +15,8 @@ class Profile extends Model
         'avatar',
         'address',
         'location',
+        'latitude',
+        'longitude',
         'preferences',
     ];
 

@@ -56,9 +56,9 @@
     {{-- Payment Proof --}}
     <td class="px-6 py-4 text-center">
         @if ($pMethod === 'bank_transfer' && $order->receipt_image)
-            <img src="{{ asset('storage/' . $order->receipt_image) }}" alt="Proof"
-                 onclick="openImagePreview('{{ asset('storage/' . $order->receipt_image) }}', '{{ $order->id }}')"
-                 class="h-10 w-10 object-cover rounded mx-auto cursor-pointer border border-gray-300 hover:opacity-80 transition-opacity ring-2 ring-transparent hover:ring-primary">
+            <img src="{{ asset($order->receipt_image) }}" alt="Payment Proof"
+                 onclick="openImagePreview('{{ asset($order->receipt_image) }}', '{{ $order->id }}')"
+                 class="h-10 w-10 object-cover rounded mx-auto cursor-pointer border border-gray-200 hover:opacity-80 transition-opacity ring-1 ring-gray-300">
         @elseif ($pMethod === 'bank_transfer')
             <span class="text-xs text-gray-400">No Image</span>
         @else

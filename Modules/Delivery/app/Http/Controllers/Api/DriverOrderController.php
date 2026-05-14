@@ -1,0 +1,185 @@
+<?php
+
+namespace Modules\Delivery\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Modules\Orders\Models\Order;
+use Modules\Delivery\Models\DeliveryTask;
+use Carbon\Carbon;
+use Modules\Delivery\Services\OrderEarningService; // 1. تم تعديل اسم الـ Service هنا
+
+class DriverOrderController extends Controller
+{
+    protected $earningService; // 2. تغيير اسم المتغير ليكون منطقياً
+
+    // 3. حقن الـ Service بالاسم الجديد
+    public function __construct(OrderEarningService $earningService)
+    {
+        $this->earningService = $earningService;
+    }
+
+    public function getAvailableOrders()
+    {
+        $orders = Order::with(['user', 'restaurant', 'items.meal', 'payment'])
+            ->where('status', 'pending_driver_acceptance')
+            ->whereDoesntHave('deliveryTask') // تأكيد عدم وجود سائق لهذا الطلب (driver_id == null)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // 4. استخدام الدالة الجديدة
+        $orders = $this->earningService->mapOrdersWithEarning($orders);
+
+        return response()->json([
+            'status' => true,
+            'data' => $orders
+        ]);
+    }
+
+    public function getOrderDetails($id)
+    {
+        $order = Order::with(['user', 'restaurant', 'items.meal', 'items.options.mealOption', 'payment'])
+            ->findOrFail($id);
+
+        // 5. استخدام الدالة الجديدة
+        $order = $this->earningService->mapOrdersWithEarning($order);
+
+        return response()->json([
+            'status' => true,
+            'data' => $order
+        ]);
+    }
+
+    public function acceptOrder(Request $request, $id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $order = Order::lockForUpdate()->findOrFail($id);
+
+            if ($order->status !== 'pending_driver_acceptance' || $order->driver_id !== null) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => false,
+                    'message' => 'عذراً، لقد سبقك موصل آخر وقبل هذا الطلب!'
+                ], 400);
+            }
+
+            $driverId = Auth::id() ?? 1;
+
+            $order->update([
+                'status' => 'accepted',
+                'driver_id' => $driverId
+            ]);
+
+            DeliveryTask::create([
+                'order_id' => $order->id,
+                'driver_id' => $driverId,
+                'status' => 'on_way',
+                'pickup_time' => now(),
+            ]);
+
+            DB::table('order_tracking')->insert([
+                'order_id' => $order->id,
+                'status' => 'accepted_by_driver',
+                'updated_at' => now(),
+            ]);
+
+            \Modules\Users\Models\DriverStatus::updateOrCreate(
+                ['driver_id' => $driverId],
+                ['availability' => 'busy']
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'تم قبول الطلب بنجاح، بالتوفيق في رحلتك!',
+                'order_id' => $order->id
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json([
+                'status' => false,
+                'message' => 'حدث خطأ فني أثناء قبول الطلب',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function completeOrder(Request $request, $id)
+    {
+        $order = Order::findOrFail($id);
+
+        $task = DeliveryTask::where('order_id', $id)
+            ->where('status', '!=', 'delivered')
+            ->first();
+
+        if (!$task) {
+            return response()->json([
+                'status' => false,
+                'message' => 'عذراً، لم يتم العثور على مهمة توصيل نشطة لهذا الطلب'
+            ], 404);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // 1. تحديث حالة الطلب الأساسي
+            $order->update(['status' => 'delivered']);
+
+            // 2. تحديث حالة مهمة التوصيل
+            $task->update([
+                'status' => 'delivered',
+                'delivery_time' => now()
+            ]);
+
+            // 3. إضافة سجل التتبع
+            DB::table('order_tracking')->insert([
+                'order_id' => $order->id,
+                'status' => 'delivered',
+                'updated_at' => now(),
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'تم تسليم الطلب بنجاح، عمل رائع!',
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json([
+                'status' => false,
+                'message' => 'حدث خطأ أثناء إتمام عملية التسليم',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getHistory()
+    {
+        $history = DeliveryTask::where('driver_id', Auth::id())
+            ->where('status', 'delivered')
+            ->with(['order.user', 'order.restaurant', 'order.payment'])
+            ->orderBy('delivery_time', 'desc')
+            ->get();
+
+        // 6. استخدام الدالة الجديدة داخل الـ Loop
+        $history->transform(function ($task) {
+            if ($task->order) {
+                $task->order = $this->earningService->mapOrdersWithEarning($task->order);
+            }
+            return $task;
+        });
+
+        return response()->json([
+            'status' => true,
+            'data' => $history
+        ]);
+    }
+}

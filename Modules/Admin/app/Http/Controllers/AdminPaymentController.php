@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Modules\Orders\Models\Order;
 use Modules\Orders\Events\OrderCreated;
 use Modules\Orders\Events\OrderBroadcasted;
+use App\Notifications\OrderAcceptedNotification;
 
 class AdminPaymentController extends Controller
 {
@@ -88,7 +89,7 @@ class AdminPaymentController extends Controller
     {
         return Order::where(function ($q) use ($status) {
             $q->whereHas('payment', fn($q2) => $q2->where('payment_status', $status))
-              ->orWhere(fn($q3) => $q3->doesntHave('payment')->where('payment_status', $status));
+                ->orWhere(fn($q3) => $q3->doesntHave('payment')->where('payment_status', $status));
         })->count();
     }
 
@@ -115,7 +116,7 @@ class AdminPaymentController extends Controller
     {
         $order->payment_status = $status;
         $order->save();
-        
+
         if ($order->payment) {
             $order->payment->payment_status = $status;
             $order->payment->save();
@@ -135,7 +136,7 @@ class AdminPaymentController extends Controller
      */
     public function approve(Request $request, $id)
     {
-        $order = Order::with('payment')->findOrFail($id);
+        $order = Order::with(['payment', 'user'])->findOrFail($id);
 
         if ($this->getPaymentStatus($order) !== 'pending_verification') {
             return response()->json(['success' => false, 'message' => 'Payment is already processed.'], 400);
@@ -146,6 +147,13 @@ class AdminPaymentController extends Controller
         $order->save();
 
         event(new OrderBroadcasted($order));
+
+        // Trigger Notification for Payment Acceptance (FCM + Database)
+        try {
+            $order->user->notify(new OrderAcceptedNotification($order));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Acceptance Notification failed for order #{$order->id}: " . $e->getMessage());
+        }
 
         return response()->json(['success' => true, 'message' => 'Payment approved successfully.']);
     }
@@ -169,6 +177,18 @@ class AdminPaymentController extends Controller
         $order->cancellation_reason = 'Payment Rejected: ' . $request->rejection_reason;
         $order->save();
 
+        // Notify User
+        try {
+            $user = $order->user;
+            $fcmToken = $user->fcm_token ?? ($user->profile->fcm_token ?? 'No Token Found');
+            \Illuminate\Support\Facades\Log::info('FCM Token found for rejection: ' . $fcmToken);
+
+            $user->notify(new \App\Notifications\OrderRejectedNotification($order, $request->rejection_reason));
+            \Illuminate\Support\Facades\Log::info("OrderRejectedNotification successfully dispatched for order #{$order->id}");
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Notification failed for order #{$order->id}: " . $e->getMessage() . " in file: " . $e->getFile() . " on line: " . $e->getLine());
+        }
+
         return response()->json(['success' => true, 'message' => 'Payment rejected successfully.']);
     }
 
@@ -180,7 +200,7 @@ class AdminPaymentController extends Controller
         $request->validate(['cancellation_reason' => 'required|string|max:500']);
 
         $order = Order::with('payment')->findOrFail($id);
-        
+
         $order->status = 'canceled';
         $order->cancellation_reason = $request->cancellation_reason;
         $order->save();

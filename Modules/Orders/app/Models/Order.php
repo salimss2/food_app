@@ -27,6 +27,9 @@ class Order extends Model
         'receipt_image',
         'rejection_reason',
         'cancellation_reason',
+        'latitude',
+        'longitude',
+        'driver_earning',
     ];
 
     /**
@@ -66,4 +69,12 @@ class Order extends Model
     // {
     //     // return OrderFactory::new();
     // }
+    /**
+     * علاقة الطلب بمهمة التوصيل (للسائق)
+     */
+    public function deliveryTask()
+    {
+        // الطلب الواحد له مهمة توصيل واحدة
+        return $this->hasOne(\Modules\Delivery\Models\DeliveryTask::class, 'order_id');
+    }
 }

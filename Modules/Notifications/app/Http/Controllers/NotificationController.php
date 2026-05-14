@@ -8,49 +8,42 @@ use Illuminate\Http\Request;
 class NotificationController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the user's notifications.
      */
     public function index()
     {
-        return view('notifications::index');
+        $notifications = auth()->user()->notifications()->paginate(15);
+
+        return response()->json([
+            'success' => true,
+            'data' => $notifications
+        ]);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Mark a specific notification as read.
      */
-    public function create()
+    public function markAsRead($id)
     {
-        return view('notifications::create');
+        $notification = auth()->user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Notification marked as read'
+        ]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Mark all unread notifications as read.
      */
-    public function store(Request $request) {}
-
-    /**
-     * Show the specified resource.
-     */
-    public function show($id)
+    public function markAllAsRead()
     {
-        return view('notifications::show');
+        auth()->user()->unreadNotifications->markAsRead();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'All notifications marked as read'
+        ]);
     }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
-    {
-        return view('notifications::edit');
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id) {}
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id) {}
 }

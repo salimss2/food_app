@@ -32,8 +32,11 @@ class MealCategory extends Model
         return $this->belongsTo(Restaurant::class);
     }
 
-    public function meals(): HasMany
+
+    public function meals()
     {
-        return $this->hasMany(Meal::class);
+        // تأكد من عمل import لمودل Meal في أعلى الملف إذا لزم الأمر
+        return $this->hasMany(Meal::class, 'meal_category_id');
     }
+
 }

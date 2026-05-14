@@ -6,8 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
-class UserController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware; // إضافة هذا
+use Illuminate\Routing\Controllers\Middleware;
+class UserController extends Controller implements HasMiddleware // إضافة implements
 {
+    // استبدل الـ __construct القديم بهذه الدالة:
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view_users', only: ['index', 'show']),
+            new Middleware('permission:create_users', only: ['create', 'store']),
+            new Middleware('permission:edit_users', only: ['edit', 'update']),
+            new Middleware('permission:delete_users', only: ['destroy']),
+        ];
+    }
     // public function index()
     // {
     //     // استرجاع كل المستخدمين
@@ -15,64 +27,88 @@ class UserController extends Controller
     //     return view('admin::user management.index', compact('users'));
     // }
 
-//     public function index()
+    //     public function index()
 // {
 //     $users = User::with('roles')->paginate(10);
 //     $roles = \Spatie\Permission\Models\Role::all(); // إرسال كل الأدوار
 //     return view('admin::user management.index', compact('users', 'roles'));
 // }
 
-public function index(Request $request)
-{
-    // 1. جلب المستخدمين الذين يحملون رتبة Admin أو Customer فقط
-    // استخدمنا role(['Admin', 'Customer']) لضمان عدم ظهور الموصلين أو أصحاب المطاعم
-$query = User::with('roles')
-    ->whereDoesntHave('roles', function ($q) {
-        $q->whereIn('name', ['Driver', 'Restaurant Admin']);
-    });
-
-    // 2. فلترة بناءً على الحالة (Status)
-    if ($request->filled('status') && $request->status != 'all') {
-        $query->where('status', $request->status);
-    }
-
-    // 3. فلترة البحث (إذا كنت تستخدم نص البحث من الـ Input في الصفحة)
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $query->where(function($q) use ($search) {
-            $q->where('name', 'like', "%$search%")
-              ->orWhere('email', 'like', "%$search%")
-              ->orWhere('phone', 'like', "%$search%");
+    public function index(Request $request)
+    {
+        // Exclude Drivers and Restaurant Admins from this view
+        $query = User::with('roles')->whereDoesntHave('roles', function ($q) {
+            $q->whereIn('name', ['Driver', 'Restaurant Admin']);
         });
+
+        // Tabs Filter: Active, Blocked, Archived
+        if ($request->filled('tab')) {
+            if ($request->tab === 'Archived') {
+                $query->onlyTrashed();
+            } else {
+                $query->where('status', $request->tab);
+            }
+        } else {
+            // Optional fallback for legacy status filtering if needed
+            if ($request->filled('status') && $request->status != 'all') {
+                $query->where('status', $request->status);
+            }
+        }
+
+        // Role Filter Dropdown
+        if ($request->filled('role_filter') && $request->role_filter !== 'all') {
+            $roleFilter = $request->role_filter;
+            $query->whereHas('roles', function ($q) use ($roleFilter) {
+                $q->where('name', $roleFilter);
+            });
+        }
+
+        // Backend Search Support
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                    ->orWhere('email', 'like', "%$search%")
+                    ->orWhere('phone', 'like', "%$search%");
+            });
+        }
+
+        $users = $query->latest()->paginate(10)->appends($request->all());
+
+        // Modal Roles (excluding Customer, Driver, Restaurant Admin)
+        $roles = \Spatie\Permission\Models\Role::whereNotIn('name', [
+            'Customer',
+            'Driver',
+            'Restaurant Admin'
+        ])->get();
+
+        // Filter Dropdown Roles (excluding Driver, Restaurant Admin)
+        $filterRoles = \Spatie\Permission\Models\Role::whereNotIn('name', [
+            'Driver',
+            'Restaurant Admin'
+        ])->get();
+
+        return view('admin::users', compact('users', 'roles', 'filterRoles'));
     }
 
-    // 4. دعم الأرشيف (المحذوفين ناعماً)
-    if ($request->has('view_deleted')) {
-        $query->onlyTrashed();
+    public function toggleBlock(User $user)
+    {
+        $user->status = strtolower($user->status) === 'active' ? 'Blocked' : 'Active';
+        $user->save();
+
+        $message = $user->status === 'Active' ? 'تم التفعيل بنجاح' : 'تم الحظر بنجاح';
+        return back()->with('success', $message);
     }
-
-    // 5. الترقيم مع الحفاظ على الفلاتر
-    $users = $query->latest()->paginate(10)->appends($request->all());
-
-    // 6. جلب الأدوار المسموح إضافتها من هذه الصفحة فقط (Admin و Customer)
-    // هذا سيجعل الـ Modal يعرض الخيارين المناسبين فقط
-$roles = \Spatie\Permission\Models\Role::whereNotIn('name', [
-        'Driver',
-        'Restaurant Admin'
-    ])->get();
-
-    return view('admin::users', compact('users', 'roles'));
-}
 
     public function show($id)
     {
         $user = User::with('roles')->findOrFail($id);
 
         // ── Customer-specific stats ──────────────────────────
-        $totalOrders   = 0;
-        $totalSpent    = 0.00;
+        $totalOrders = 0;
+        $totalSpent = 0.00;
         $pendingOrders = 0;
-        $accountAge    = $user->created_at->diffForHumans();
+        $accountAge = $user->created_at->diffForHumans();
 
         // If you have an Order model, uncomment and adapt:
         // if ($user->hasRole('Customer')) {
@@ -92,7 +128,7 @@ $roles = \Spatie\Permission\Models\Role::whereNotIn('name', [
     }
 
 
-// عرض نموذج إضافة مستخدم جديد
+    // عرض نموذج إضافة مستخدم جديد
     public function create()
     {
         // جلب كل الأدوار المتاحة
@@ -104,20 +140,20 @@ $roles = \Spatie\Permission\Models\Role::whereNotIn('name', [
     public function store(Request $request)
     {
         $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
-            'phone'    => 'nullable|string|max:20',
-            'role'     => 'required|exists:roles,name',
-            'status'   => 'required|in:Active,Blocked,Inactive',
+            'phone' => 'nullable|string|max:20',
+            'role' => 'required|exists:roles,name',
+            'status' => 'required|in:Active,Blocked,Inactive',
         ]);
 
         $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
+            'name' => $request->name,
+            'email' => $request->email,
             'password' => bcrypt($request->password),
-            'phone'    => $request->phone,
-            'status'   => $request->status,
+            'phone' => $request->phone,
+            'status' => $request->status,
         ]);
 
         $user->assignRole($request->role);
@@ -131,7 +167,7 @@ $roles = \Spatie\Permission\Models\Role::whereNotIn('name', [
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,'.$id,
+            'email' => 'required|email|unique:users,email,' . $id,
             'password' => 'nullable|string|min:8',
             'role' => 'required|exists:roles,name',
             'status' => 'required|in:Active,Blocked,Inactive'
@@ -140,7 +176,7 @@ $roles = \Spatie\Permission\Models\Role::whereNotIn('name', [
         $user->name = $request->name;
         $user->email = $request->email;
         $user->status = $request->status;
-        
+
         if ($request->filled('password')) {
             $user->password = bcrypt($request->password);
         }

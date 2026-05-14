@@ -16,7 +16,10 @@ class DriverProfile extends Model
         'user_id',      // أهم حقل للربط مع جدول users
         'address',
         'id_number',
-        'avatar_url',
+        'avatar_url',     // 🔥 تم إضافة الحقل هنا للسماح بحفظ رابط الصورة
+        'user_id',
+        'latitude',
+        'longitude',
         'vehicle_model',
         'vehicle_plate',
         'vehicle_vin',

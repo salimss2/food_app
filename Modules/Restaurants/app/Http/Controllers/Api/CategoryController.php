@@ -45,7 +45,7 @@ class CategoryController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:3072',
         ]);
 
         if ($validator->fails()) {
@@ -59,7 +59,7 @@ class CategoryController extends Controller
         ];
 
         if ($request->hasFile('image')) {
-            $path = Storage::disk('public')->put('restaurants/categories', $request->file('image'));
+            $path = $request->file('image')->store('categories', 'public');
             $categoryData['image'] = $path;
         }
 
@@ -90,7 +90,7 @@ class CategoryController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:3072',
         ]);
 
         if ($validator->fails()) {
@@ -102,10 +102,10 @@ class CategoryController extends Controller
 
         if ($request->hasFile('image')) {
             // Delete old image if exists
-            if ($category->image) {
+            if ($category->image && Storage::disk('public')->exists($category->image)) {
                 Storage::disk('public')->delete($category->image);
             }
-            $path = Storage::disk('public')->put('restaurants/categories', $request->file('image'));
+            $path = $request->file('image')->store('categories', 'public');
             $category->image = $path;
         }
 
@@ -118,6 +118,7 @@ class CategoryController extends Controller
             'data' => new CategoryResource($category),
         ]);
     }
+
 
     /**
      * Remove the specified category.

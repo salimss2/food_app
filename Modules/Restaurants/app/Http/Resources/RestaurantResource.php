@@ -20,13 +20,15 @@ class RestaurantResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'location' => $this->location,
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
             'status' => $this->status,
+            'is_open' => $this->status === 'open',
             'category' => $this->category,
-            'account_status' => $this->account_status,
-            'logo' => $this->logo ? asset('storage/' . $this->logo) : 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random',
+            'logo' => $this->logo
+                ? asset('storage/' . $this->logo)
+                : 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random',
             'meal_categories' => CategoryResource::collection($this->whenLoaded('mealCategories')),
-            'meals' => MealResource::collection($this->whenLoaded('meals')),
-            'offers' => $this->whenLoaded('offers'), // Can add OfferResource later if needed
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

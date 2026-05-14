@@ -11,7 +11,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(\Kreait\Laravel\Firebase\FirebaseProjectManager::class, function ($app) {
+            return new \App\Support\Firebase\CustomFirebaseProjectManager($app, $app->make('config'));
+        });
     }
 
     /**

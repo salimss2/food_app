@@ -39,12 +39,23 @@ class RestaurantController extends Controller
      */
     public function show($id)
     {
-        $restaurant = Restaurant::with(['mealCategories', 'meals'])->findOrFail($id);
+        // 1. جلب المطعم مع الأقسام ومع الوجبات داخل كل قسم بطلب واحد
+        $restaurant = Restaurant::with(['meal_categories.meals'])->findOrFail($id);
 
-        return response()->json([
-            'status' => 'success',
-            'data' => new RestaurantResource($restaurant)
-        ]);
+        // 2. تحويل الكائن إلى مصفوفة للتأكد من المسميات
+        $data = $restaurant->toArray();
+
+        // 3. تأمين وصول الوجبات حتى لو كانت خارج الأقسام (خطة بديلة للفلاتر)
+        // نجمع كل الوجبات من كل الأقسام في قائمة واحدة تسمى 'meals'
+        $allMeals = [];
+        foreach ($restaurant->meal_categories as $category) {
+            foreach ($category->meals as $meal) {
+                $allMeals[] = $meal;
+            }
+        }
+        $data['meals'] = $allMeals;
+
+        return response()->json($data);
     }
 
     /**
@@ -67,5 +78,70 @@ class RestaurantController extends Controller
      */
     public function destroy($id)
     {
+    }
+
+    /**
+     * Update the restaurant's open/closed status.
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    // تحديث حالة المطعم مفتوح - مغلق
+    public function updateStatus(Request $request)
+    {
+        $request->validate([
+            'status' => 'required|string|in:open,closed',
+        ]);
+
+        $restaurant = $request->user()->restaurant;
+
+        if (!$restaurant) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Restaurant not found for this user.'
+            ], 404);
+        }
+
+        $restaurant->update([
+            'status' => $request->status
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Restaurant status updated successfully.',
+            'restaurant_status' => $restaurant->status
+        ]);
+    }
+
+    /**
+     * تحديث موقع المطعم (Latitude & Longitude)
+     */
+    public function updateLocation(Request $request)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        $restaurant = $request->user()->restaurant;
+
+        if (!$restaurant) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'المطعم غير موجود لهذا المستخدم.'
+            ], 404);
+        }
+
+        $restaurant->update([
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم تحديث موقع المطعم بنجاح',
+            'latitude' => $restaurant->latitude,
+            'longitude' => $restaurant->longitude,
+        ]);
     }
 }

@@ -5,6 +5,15 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect()->route('admin.login');
 });
+
+// ── Language Switcher ──────────────────────────────────────────────────────
+Route::get('/lang/{locale}', function (string $locale) {
+    if (in_array($locale, ['en', 'ar'])) {
+        return redirect()->back()->withCookie(cookie()->forever('locale', $locale));
+    }
+    return redirect()->back();
+})->name('lang.switch');
+
 Route::get('/debug-test', function () {
     throw new Exception("Laravel is working!");
 });

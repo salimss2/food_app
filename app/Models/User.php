@@ -28,6 +28,9 @@ class User extends Authenticatable
         'password',
         'phone',
         'status',
+        'fcm_token',
+        'otp_code',
+        'otp_expires_at',
     ];
 
 

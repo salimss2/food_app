@@ -5,6 +5,8 @@ namespace Modules\Orders\Observers;
 use Modules\Orders\Models\Order;
 use App\Models\User;
 
+use Kreait\Laravel\Firebase\Facades\Firebase;
+
 class OrderObserver
 {
     /**
@@ -16,6 +18,8 @@ class OrderObserver
             'status' => $order->status ?? 'pending',
             'description' => 'Customer created order'
         ]);
+
+        $this->syncToFirebase($order);
     }
 
     /**
@@ -57,6 +61,35 @@ class OrderObserver
                     'description' => 'Driver ' . $driver->name . ' assigned to order'
                 ]);
             }
+        }
+
+        $this->syncToFirebase($order);
+    }
+
+    /**
+     * Sync order data to Firebase Realtime Database.
+     */
+    private function syncToFirebase(Order $order): void
+    {
+        try {
+            // Load required relations if they are not loaded to prevent N+1 and errors
+            $order->loadMissing(['user', 'restaurant']);
+
+            $data = [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'status' => $order->status,
+                'payment_status' => $order->payment_status,
+                'total' => (float) $order->total,
+                'user_name' => $order->user ? $order->user->name : 'Unknown',
+                'restaurant_name' => $order->restaurant ? $order->restaurant->name : 'Unknown',
+                'timestamp' => now()->timestamp * 1000, // For sorting in JS
+                'created_at' => $order->created_at ? $order->created_at->format('Y-m-d H:i') : now()->format('Y-m-d H:i'),
+            ];
+
+            Firebase::database()->getReference('orders/' . $order->id)->set($data);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Firebase sync failed for Order ' . $order->id . ': ' . $e->getMessage());
         }
     }
 }

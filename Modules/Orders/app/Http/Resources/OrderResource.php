@@ -24,6 +24,14 @@ class OrderResource extends JsonResource
             'payment_method' => $this->payment_method,
             'total' => $this->total,
             'status' => $this->status,
+            'customer_location' => [
+                'latitude' => $this->latitude,
+                'longitude' => $this->longitude,
+            ],
+            'restaurant_location' => [
+                'latitude' => $this->restaurant->latitude ?? null,
+                'longitude' => $this->restaurant->longitude ?? null,
+            ],
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
             'restaurant' => new RestaurantResource($this->whenLoaded('restaurant')),
             'user' => $this->whenLoaded('user'), // User model doesn't have a resource yet, returning raw or we can create one

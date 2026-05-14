@@ -2,6 +2,8 @@
 
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Restaurants\Models\MealCategory; // Add this import
+
 class Restaurant extends Model
 {
     protected $fillable = [
@@ -13,4 +15,8 @@ class Restaurant extends Model
         'status',
         'rating'
     ];
+    public function meal_categories()
+    {
+        return $this->hasMany(MealCategory::class);
+    }
 }

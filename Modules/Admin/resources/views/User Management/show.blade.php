@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() == 'ar' ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,74 +22,25 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('modules/admin/css/app.css') }}">
-</head>
+    <!-- Cairo Font (Arabic RTL) -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        html[dir="rtl"] body { font-family: 'Cairo', sans-serif !important; }
+        html[dir="rtl"] .ml-3 { margin-left: 0 !important; margin-right: 0.75rem !important; }
+        html[dir="rtl"] .ml-4 { margin-left: 0 !important; margin-right: 1rem !important; }
+        html[dir="rtl"] aside { left: auto !important; right: 0 !important; border-right: none !important; border-left: 1px solid #e5e7eb !important; }
+        html[dir="rtl"] .space-x-4 > :not([hidden]) ~ :not([hidden]) { --tw-space-x-reverse: 1 !important; }
+        html[dir="rtl"] .space-x-2 > :not([hidden]) ~ :not([hidden]) { --tw-space-x-reverse: 1 !important; }
+        html[dir="rtl"] #langDropdownMenu, html[dir="rtl"] #profileDropdownMenu { right: auto !important; left: 0 !important; }
+    </style></head>
 <body class="bg-gray-50 text-gray-800 font-sans antialiased overflow-hidden flex h-screen">
 
     {{-- Sidebar --}}
-    <div id="sidebarBackdrop" class="fixed inset-0 z-20 bg-gray-900 bg-opacity-50 lg:hidden hidden"></div>
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 transition-transform duration-300 transform -translate-x-full lg:translate-x-0 lg:static lg:inset-0 lg:flex lg:flex-col shadow-sm">
-        <div class="flex items-center justify-center h-16 border-b border-gray-200 px-6">
-            <h1 class="text-xl font-bold text-gray-900 flex items-center space-x-2">
-                <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                <span>AdminPanel</span>
-            </h1>
-        </div>
-        <div class="overflow-y-auto overflow-x-hidden flex-grow shadow-inner">
-            <ul class="flex flex-col py-4 space-y-1 px-3 mb-10">
-                <li class="px-2"><div class="text-xs uppercase font-semibold text-gray-400 tracking-wider mb-2">Menu</div></li>
-                <li>
-                    <a href="{{ route('admin.dashboard') }}" class="relative flex flex-row items-center h-11 focus:outline-none hover:bg-gray-50 text-gray-600 hover:text-gray-800 border-l-4 border-transparent px-6 group transition-colors">
-                        <svg class="w-5 h-5 text-gray-400 group-hover:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-                        <span class="ml-3 font-medium text-sm">Dashboard</span>
-                    </a>
-                </li>
-                <li class="px-2 mt-4"><div class="text-xs uppercase font-semibold text-gray-400 tracking-wider mb-2">Users & Roles</div></li>
-                <li>
-                    <a href="{{ route('admin.users.index') }}" class="relative flex flex-row items-center h-11 focus:outline-none hover:bg-gray-50 text-primary bg-indigo-50 border-l-4 border-primary px-6 rounded-r-lg group transition-colors">
-                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                        <span class="ml-3 font-medium text-sm">Users Collection</span>
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </aside>
+    @include('admin::layouts.partials.sidebar')
 
     <div class="flex-1 flex flex-col min-w-0 transition-all duration-300">
         {{-- Navbar --}}
-        <header class="bg-white shadow-sm ring-1 ring-gray-200 z-10">
-            <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-                <div class="flex items-center flex-1">
-                    <button id="mobileMenuBtn" class="text-gray-500 focus:outline-none lg:hidden pl-1 pr-3">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                    </button>
-                    {{-- Breadcrumb --}}
-                    <nav class="flex items-center space-x-2 text-sm text-gray-500">
-                        <a href="{{ route('admin.dashboard') }}" class="hover:text-primary transition-colors">Dashboard</a>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        <a href="{{ route('admin.users.index') }}" class="hover:text-primary transition-colors">Users</a>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        <span class="font-medium text-gray-800">{{ $user->name }}</span>
-                    </nav>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <div class="relative">
-                        <button id="profileDropdownBtn" class="flex items-center space-x-2 focus:outline-none">
-                            <img class="w-8 h-8 rounded-full border-2 border-primary object-cover" src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name ?? 'Admin') }}&background=4f46e5&color=fff" alt="Admin">
-                            <span class="hidden md:block font-medium text-sm text-gray-700">{{ auth()->user()->name ?? 'Admin' }}</span>
-                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </button>
-                        <div id="profileDropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-20">
-                            <a href="{{ route('admin.profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</a>
-                            <div class="border-t border-gray-100"></div>
-                            <form method="POST" action="{{ route('admin.logout') }}" class="block">
-                                @csrf
-                                <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Sign out</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </header>
+        @include('admin::layouts.partials.header')
 
         {{-- Flash Messages --}}
         @if(session('success'))

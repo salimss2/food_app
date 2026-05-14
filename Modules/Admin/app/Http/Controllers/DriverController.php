@@ -9,9 +9,19 @@ use Modules\Auth\Models\DriverProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Routing\Controllers\HasMiddleware; // أضف هذا
+use Illuminate\Routing\Controllers\Middleware;
 
-class DriverController extends Controller
+
+class DriverController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view_drivers', only: ['index', 'show']),
+            new Middleware('permission:edit_drivers', only: ['create', 'store', 'edit', 'update', 'destroy', 'toggleAvailability']),
+        ];
+    }
     /**
      * Display the drivers index page.
      * Fetches users with the 'Driver' role and their driverProfile relationship.
@@ -19,26 +29,26 @@ class DriverController extends Controller
     public function index()
     {
         $baseQuery = User::role('Driver');
-        
+
         $totalDrivers = (clone $baseQuery)->count();
-        $onlineCount  = (clone $baseQuery)->whereHas('availability', fn($q) => $q->where('is_online', 1))->count();
+        $onlineCount = (clone $baseQuery)->whereHas('availability', fn($q) => $q->where('is_online', 1))->count();
         $offlineCount = (clone $baseQuery)->whereHas('availability', fn($q) => $q->where('is_online', 0))->count();
-        
-        $activeCount   = (clone $baseQuery)->where('status', 'Active')->count();
+
+        $activeCount = (clone $baseQuery)->where('status', 'Active')->count();
         $inactiveCount = (clone $baseQuery)->where('status', 'Inactive')->count();
-        $blockedCount  = (clone $baseQuery)->where('status', 'Blocked')->count();
+        $blockedCount = (clone $baseQuery)->where('status', 'Blocked')->count();
 
         $drivers = $baseQuery->with(['driverProfile', 'availability'])
             ->latest()
             ->paginate(10);
 
         return view('admin::drivers', compact(
-            'drivers', 
-            'totalDrivers', 
-            'onlineCount', 
-            'offlineCount', 
-            'activeCount', 
-            'inactiveCount', 
+            'drivers',
+            'totalDrivers',
+            'onlineCount',
+            'offlineCount',
+            'activeCount',
+            'inactiveCount',
             'blockedCount'
         ));
     }
@@ -52,26 +62,26 @@ class DriverController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name'          => 'required|string|max:255',
-            'email'         => 'required|email|unique:users,email',
-            'phone'         => 'required|string|max:20',
-            'password'      => 'required|string|min:8',
-            'status'        => 'required|in:Active,Blocked,Inactive',
-            'id_number'     => 'nullable|string|max:50',
-            'address'       => 'nullable|string|max:255',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'phone' => 'required|string|max:20',
+            'password' => 'required|string|min:8',
+            'status' => 'required|in:Active,Blocked,Inactive',
+            'id_number' => 'nullable|string|max:50',
+            'address' => 'nullable|string|max:255',
             'vehicle_model' => 'nullable|string|max:100',
             'vehicle_plate' => 'nullable|string|max:50',
-            'vehicle_vin'   => 'nullable|string|max:50',
-            'is_online'     => 'nullable|boolean',
+            'vehicle_vin' => 'nullable|string|max:50',
+            'is_online' => 'nullable|boolean',
         ]);
 
         // a) Create User record
         $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'phone'    => $request->phone,
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
             'password' => Hash::make($request->password),
-            'status'   => $request->status,
+            'status' => $request->status,
         ]);
 
         // b) Assign Driver role
@@ -79,21 +89,21 @@ class DriverController extends Controller
 
         // c) Create driver_profiles record
         DriverProfile::create([
-            'user_id'       => $user->id,
-            'id_number'     => $request->id_number,
-            'address'       => $request->address,
+            'user_id' => $user->id,
+            'id_number' => $request->id_number,
+            'address' => $request->address,
             'vehicle_model' => $request->vehicle_model,
             'vehicle_plate' => $request->vehicle_plate,
-            'vehicle_vin'   => $request->vehicle_vin,
+            'vehicle_vin' => $request->vehicle_vin,
         ]);
 
         // d) Create driver_availability record
         $isOnline = $request->has('is_online') ? 1 : 0;
         DriverAvailability::create([
-            'driver_id'    => $user->id,
-            'is_online'    => $isOnline,
+            'driver_id' => $user->id,
+            'is_online' => $isOnline,
             'availability' => 'idle',                      // ENUM: idle, delivering, break
-            'status'       => $isOnline ? 'available' : 'unavailable', // ENUM: available, unavailable
+            'status' => $isOnline ? 'available' : 'unavailable', // ENUM: available, unavailable
         ]);
 
         Log::info('[DriverController] New Driver creation: ' . $user->name . ' (ID: ' . $user->id . ', is_online: ' . $isOnline . ')');
@@ -110,22 +120,22 @@ class DriverController extends Controller
         $user = User::role('Driver')->findOrFail($id);
 
         $request->validate([
-            'name'          => 'required|string|max:255',
-            'email'         => 'required|email|unique:users,email,' . $id,
-            'phone'         => 'required|string|max:20',
-            'password'      => 'nullable|string|min:8',
-            'status'        => 'required|in:Active,Blocked,Inactive',
-            'id_number'     => 'nullable|string|max:50',
-            'address'       => 'nullable|string|max:255',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $id,
+            'phone' => 'required|string|max:20',
+            'password' => 'nullable|string|min:8',
+            'status' => 'required|in:Active,Blocked,Inactive',
+            'id_number' => 'nullable|string|max:50',
+            'address' => 'nullable|string|max:255',
             'vehicle_model' => 'nullable|string|max:100',
             'vehicle_plate' => 'nullable|string|max:50',
-            'vehicle_vin'   => 'nullable|string|max:50',
+            'vehicle_vin' => 'nullable|string|max:50',
         ]);
 
         // Sync users table
-        $user->name   = $request->name;
-        $user->email  = $request->email;
-        $user->phone  = $request->phone;
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->phone = $request->phone;
         $user->status = $request->status;
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
@@ -136,11 +146,11 @@ class DriverController extends Controller
         $user->driverProfile()->updateOrCreate(
             ['user_id' => $user->id],
             [
-                'id_number'     => $request->id_number,
-                'address'       => $request->address,
+                'id_number' => $request->id_number,
+                'address' => $request->address,
                 'vehicle_model' => $request->vehicle_model,
                 'vehicle_plate' => $request->vehicle_plate,
-                'vehicle_vin'   => $request->vehicle_vin,
+                'vehicle_vin' => $request->vehicle_vin,
             ]
         );
 
@@ -183,7 +193,7 @@ class DriverController extends Controller
 
         try {
             $user = User::role('Driver')->findOrFail($id);
-            
+
             // Find the current record to determine new status
             $availability = DriverAvailability::where('driver_id', $user->id)->first();
             $newStatus = $availability ? !$availability->is_online : true;
@@ -192,14 +202,14 @@ class DriverController extends Controller
             $availability = DriverAvailability::updateOrCreate(
                 ['driver_id' => $user->id],
                 [
-                    'is_online'    => $newStatus,
+                    'is_online' => $newStatus,
                     'availability' => 'idle',
-                    'status'       => 'unavailable',
+                    'status' => 'unavailable',
                 ]
             );
 
-            if (!$availability) { 
-                throw new \Exception('Failed to save availability to database'); 
+            if (!$availability) {
+                throw new \Exception('Failed to save availability to database');
             }
 
             // Refresh from DB to make 100% sure we are reading the current state
@@ -208,12 +218,12 @@ class DriverController extends Controller
             \Log::info('Availability updated in DB for Driver ID ' . $id . '. PK: ' . $availability->id . '. Connection: ' . $availability->getConnectionName() . '. New status: ' . ($availability->is_online ? '1' : '0'));
 
             return response()->json([
-                'success'        => true, 
-                'is_online'      => (bool)$availability->is_online,
-                'db_row_id'      => $availability->id,
+                'success' => true,
+                'is_online' => (bool) $availability->is_online,
+                'db_row_id' => $availability->id,
                 'driver_id_used' => $availability->driver_id,
-                'table'          => $availability->getTable(),
-                'connection'     => $availability->getConnectionName()
+                'table' => $availability->getTable(),
+                'connection' => $availability->getConnectionName()
             ], 200);
 
         } catch (\Exception $e) {
@@ -221,7 +231,7 @@ class DriverController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Database error: ' . $e->getMessage(),
-                'trace'   => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString()
             ], 500);
         }
     }

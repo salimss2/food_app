@@ -8,13 +8,13 @@ function openViewModal(user) {
     document.getElementById('view_avatar').src =
         `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=4f46e5&color=fff&size=200`;
 
-    document.getElementById('view_name').innerText        = user.name  || '—';
-    document.getElementById('view_email').innerText       = user.email || '—';
-    document.getElementById('view_id').innerText          = '#' + user.id;
-    document.getElementById('view_phone').innerText       = user.phone  || 'N/A';
-    document.getElementById('view_status').innerText      = user.status || '—';
-    document.getElementById('view_role').innerText        = user.role   || 'Customer';
-    document.getElementById('view_created_at').innerText  = user.created_at || '—';
+    document.getElementById('view_name').innerText = user.name || '—';
+    document.getElementById('view_email').innerText = user.email || '—';
+    document.getElementById('view_id').innerText = '#' + user.id;
+    document.getElementById('view_phone').innerText = user.phone || 'N/A';
+    document.getElementById('view_status').innerText = user.status || '—';
+    document.getElementById('view_role').innerText = user.role || 'Customer';
+    document.getElementById('view_created_at').innerText = user.created_at || '—';
 
     // Role badge
     document.getElementById('view_role_badge').innerText = user.role || 'Customer';
@@ -23,9 +23,8 @@ function openViewModal(user) {
     const statusBadge = document.getElementById('view_status_badge');
     statusBadge.innerText = user.status || '—';
     const isActive = (user.status || '').toLowerCase() === 'active';
-    statusBadge.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-    }`;
+    statusBadge.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+        }`;
 
     // "View Full Profile" link — builds /admin/users/{id}
     const storeUrl = document.getElementById('userForm')?.getAttribute('data-store-url') || '/admin/users';
@@ -62,11 +61,17 @@ function openEditModal(id, name, email, phone, role, status) {
     document.getElementById('modal-title').innerText = 'Edit User';
 
     // Populate form fields
-    document.getElementById('userName').value   = name;
-    document.getElementById('userEmail').value  = email;
-    document.getElementById('userPhone').value  = phone !== 'null' ? (phone || '') : '';
-    document.getElementById('userRole').value   = role;
-    document.getElementById('userStatus').value = status;
+    document.getElementById('userName').value = name;
+    document.getElementById('userEmail').value = email;
+    document.getElementById('userPhone').value = phone !== 'null' ? (phone || '') : '';
+    document.getElementById('userRole').value = role;
+    const statusSelect = document.getElementById('userStatus');
+    const targetStatus = (status || 'Active').trim().toLowerCase();
+    Array.from(statusSelect.options).forEach(option => {
+        if (option.value.toLowerCase() === targetStatus) {
+            statusSelect.value = option.value;
+        }
+    });
     document.getElementById('userPassword').value = '';
 
     // Build update URL: /admin/users/{id}
@@ -109,11 +114,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── Sidebar & Dropdown Logic ───────────────────────────────────
-const sidebar            = document.getElementById('sidebar');
-const sidebarBackdrop    = document.getElementById('sidebarBackdrop');
-const mobileMenuBtn      = document.getElementById('mobileMenuBtn');
+const sidebar = document.getElementById('sidebar');
+const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
 const profileDropdownBtn = document.getElementById('profileDropdownBtn');
-const profileDropdownMenu= document.getElementById('profileDropdownMenu');
+const profileDropdownMenu = document.getElementById('profileDropdownMenu');
 
 if (mobileMenuBtn) {
     mobileMenuBtn.addEventListener('click', () => {
@@ -147,7 +152,7 @@ const searchInput = document.getElementById('userSearch');
 if (searchInput) {
     searchInput.addEventListener('input', (e) => {
         const query = e.target.value.toLowerCase();
-        const rows  = document.querySelectorAll('#usersTableBody tr');
+        const rows = document.querySelectorAll('#usersTableBody tr');
         rows.forEach(row => {
             if (row.children.length === 1) return; // skip empty-state row
             row.classList.toggle('hidden', !row.innerText.toLowerCase().includes(query));

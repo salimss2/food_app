@@ -3,52 +3,79 @@
 namespace Modules\Restaurants\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 use Modules\Restaurants\Http\Resources\RestaurantResource;
 
+/**
+ * ProfileController
+ *
+ * Manages the restaurant owner's personal profile and restaurant open/closed status.
+ *
+ * Routes (all protected by auth:sanctum):
+ *   GET   /api/v1/profile                          — view profile + restaurant info
+ *   POST  /api/v1/profile/update                   — update name, phone, profile_picture ONLY
+ *   PATCH /api/v1/profile/toggle-restaurant-status — toggle open/closed
+ */
 class ProfileController extends Controller
 {
     /**
-     * Display the authenticated user's profile.
+     * GET /api/v1/profile
+     *
+     * Returns the authenticated owner's profile details AND associated
+     * restaurant info (name, is_open status) for the Flutter app header.
+     *
+     * @return JsonResponse
      */
-    public function show()
+    public function show(): JsonResponse
     {
         $user = Auth::user();
         $user->load('restaurant');
 
         ob_clean();
         return response()->json([
-            'status' => true,
+            'status' => 'success',
             'data' => [
+                'id' => $user->id,
+                'user_name' => $user->name,
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
-                'restaurant' => new RestaurantResource($user->restaurant),
+                'profile_picture' => $user->profile_picture
+                    ? asset('storage/' . $user->profile_picture)
+                    : null,
+                'restaurant_name' => $user->restaurant ? $user->restaurant->name : null,
+                'status' => $user->restaurant ? $user->restaurant->status : null,
+                'restaurant' => $user->restaurant
+                    ? new RestaurantResource($user->restaurant)
+                    : null,
             ],
         ]);
     }
 
+
     /**
-     * Update the authenticated user's profile.
+     * POST /api/v1/profile/update
+     *
+     * STRICTLY updates only 3 fields: name, phone, profile_picture.
+     * Requests attempting to update email or restaurant_name are silently ignored.
+     * Supports multipart/form-data for image upload.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
      */
-    public function update(Request $request)
+    public function update(Request $request): JsonResponse
     {
         $user = Auth::user();
-        
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => [
-                'required',
-                'email',
-                Rule::unique('users', 'email')->ignore($user->id),
-            ],
             'phone' => 'required|string|max:20',
-            'restaurant_name' => 'required|string|max:255',
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:3072',
         ]);
 
         if ($validator->fails()) {
@@ -59,54 +86,54 @@ class ProfileController extends Controller
             ], 422);
         }
 
-        // Update User info
-        $user->update([
+        // --- Update only the 3 allowed user fields ---
+        $userData = [
             'name' => $request->name,
-            'email' => $request->email,
             'phone' => $request->phone,
-        ]);
+            // email and restaurant_name are intentionally excluded.
+        ];
 
-        // Update Restaurant info
-        if ($user->restaurant) {
-            $restaurantData = [
-                'name' => $request->restaurant_name,
-            ];
-
-            if ($request->hasFile('logo')) {
-                // Delete old logo if it exists
-                if ($user->restaurant->logo && Storage::disk('public')->exists($user->restaurant->logo)) {
-                    Storage::disk('public')->delete($user->restaurant->logo);
-                }
-
-                $file = $request->file('logo');
-                $path = Storage::disk('public')->put('restaurants/logos', $file);
-                $restaurantData['logo'] = $path;
+        // --- Handle profile picture upload ---
+        if ($request->hasFile('profile_picture')) {
+            // Delete old picture from storage to avoid orphaned files.
+            if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
+                Storage::disk('public')->delete($user->profile_picture);
             }
 
-            $user->restaurant->update($restaurantData);
+            $file = $request->file('profile_picture');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->storeAs('users/profiles', $filename, 'public');
+            $userData['profile_picture'] = 'users/profiles/' . $filename;
         }
 
-        // Fetch fresh data
+        $user->update($userData);
         $user->refresh();
-        $user->load('restaurant');
 
         ob_clean();
         return response()->json([
             'status' => true,
-            'message' => 'Profile updated successfully',
+            'message' => 'Profile updated successfully.',
             'data' => [
+                'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
-                'restaurant' => new RestaurantResource($user->restaurant),
+                'profile_picture' => $user->profile_picture
+                    ? asset('storage/' . $user->profile_picture)
+                    : null,
             ],
         ]);
     }
 
     /**
-     * Toggle the status of the restaurant (open/closed).
+     * PATCH /api/v1/profile/toggle-restaurant-status
+     *
+     * Toggles the restaurant's status between 'open' and 'closed'.
+     * Returns the updated RestaurantResource so Flutter can update its RxBool.
+     *
+     * @return JsonResponse
      */
-    public function toggleStatus()
+    public function toggleStatus(): JsonResponse
     {
         $user = Auth::user();
         $restaurant = $user->restaurant;
@@ -114,19 +141,24 @@ class ProfileController extends Controller
         if (!$restaurant) {
             return response()->json([
                 'status' => false,
-                'message' => 'Restaurant not found',
+                'message' => 'No restaurant associated with this account.',
             ], 404);
         }
 
-        // Toggle status between 'open' and 'closed'
         $newStatus = ($restaurant->status === 'open') ? 'closed' : 'open';
         $restaurant->update(['status' => $newStatus]);
+
+        Log::info("Restaurant status toggled", [
+            'owner_id' => $user->id,
+            'restaurant_id' => $restaurant->id,
+            'new_status' => $newStatus,
+        ]);
 
         ob_clean();
         return response()->json([
             'status' => true,
-            'message' => 'Restaurant status toggled successfully',
-            'data' => new RestaurantResource($restaurant),
+            'message' => "Restaurant is now {$newStatus}.",
+            'data' => new RestaurantResource($restaurant->fresh()),
         ]);
     }
 }

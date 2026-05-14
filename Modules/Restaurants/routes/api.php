@@ -31,5 +31,7 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
     Route::post('categories/{id}', [CategoryController::class, 'update']); // Using POST for multipart support
     Route::delete('categories/{id}', [CategoryController::class, 'destroy']);
 
-    
+    // Restaurant Update Location And Status
+    Route::patch('restaurant/status', [RestaurantController::class, 'updateStatus']);
+    Route::post('restaurant/update-location', [RestaurantController::class, 'updateLocation']);
 });

@@ -16,12 +16,15 @@ class Restaurant extends Model
     protected $fillable = [
         'name',
         'location',
+        'latitude',
+        'longitude',
         'status',
         'category',
         'owner_id',
         'user_id',
         'logo',
-        'account_status'
+        'account_status',
+        'is_open'
     ];
 
     public function owner()
@@ -60,4 +63,17 @@ class Restaurant extends Model
     {
         return $this->hasMany(Offer::class);
     }
+    public function categories()
+    {
+        return $this->hasMany(MealCategory::class);
+    }
+
+    // Add this to resolve the RelationNotFoundException
+
+    public function meal_categories()
+    {
+        // تأكد من عمل import لمودل MealCategory في أعلى الملف إذا لزم الأمر
+        return $this->hasMany(MealCategory::class, 'restaurant_id');
+    }
+
 }

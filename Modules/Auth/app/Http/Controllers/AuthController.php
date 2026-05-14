@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB; // أضفنا هذا للتعامل مع قاعدة البيانات مباشرة
+use Google\Client;
+
+
 
 class AuthController extends Controller
 {
@@ -178,7 +181,7 @@ class AuthController extends Controller
         if ($user->status != 'active') {
             return response()->json([
                 'status' => false,
-                'message' => 'Account not active'
+                'message' => 'تم حظر حسابك. يرجى التواصل مع الإدارة.'
             ], 403);
         }
 
@@ -292,25 +295,97 @@ class AuthController extends Controller
         }
     }
 
-   public function getProfile(Request $request) {
-    try {
-        $user = auth()->user();
-        if (!$user) {
-            return response()->json(['status' => false, 'message' => 'Unauthorized'], 401);
-        }
+    public function getProfile(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            if (!$user) {
+                return response()->json(['status' => false, 'message' => 'Unauthorized'], 401);
+            }
 
-        // جرب جلب البيانات بدون تحميل العلاقات أولاً للتأكد
+            // جرب جلب البيانات بدون تحميل العلاقات أولاً للتأكد
+            return response()->json([
+                'status' => true,
+                'data' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            // هذا السطر سيطبع الخطأ في فلاتر بدلاً من إرسال null
+            return response()->json(['status' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function updateFcmToken(Request $request)
+    {
+        $request->validate([
+            'fcm_token' => 'required|string',
+        ]);
+
+        auth()->user()->update(['fcm_token' => $request->fcm_token]);
+
         return response()->json([
             'status' => true,
-            'data' => [
-                'name'  => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-            ]
+            'message' => 'FCM token updated successfully.',
         ]);
-    } catch (\Exception $e) {
-        // هذا السطر سيطبع الخطأ في فلاتر بدلاً من إرسال null
-        return response()->json(['status' => false, 'error' => $e->getMessage()], 500);
     }
-}
+
+    /**
+     * Google Sign-In for Flutter App
+     */
+    public function googleSignIn(\Illuminate\Http\Request $request)
+    {
+        try {
+            $request->validate(['idToken' => 'required|string']);
+
+            $client = new \Google_Client(['client_id' => '780792946688-bvv2ire3ac8icbfmha80ouc23qql7l46.apps.googleusercontent.com']); // معرفك الصحيح
+
+            // تعطيل فحص SSL محلياً كما فعلنا سابقاً
+            $guzzleClient = new \GuzzleHttp\Client(['verify' => false]);
+            $client->setHttpClient($guzzleClient);
+
+            // فك تشفير التوكن عبر جوجل
+            $payload = $client->verifyIdToken($request->idToken);
+
+            if ($payload) {
+                // 1. استخراج بياناتك الحقيقية من حساب جوجل
+                $email = $payload['email'];
+                $name = $payload['name'] ?? 'مستخدم جوجل';
+                $avatar = $payload['picture'] ?? null; // صورة جوجل
+
+                // 2. البحث عن المستخدم أو إنشاء حساب جديد له
+                $user = \App\Models\User::firstOrCreate(
+                    ['email' => $email],
+                    [
+                        'name' => $name,
+                        'password' => \Hash::make(\Str::random(24)), // كلمة مرور عشوائية معقدة
+                        // 'avatar' => $avatar, // (قم بإزالة الـ // إذا كان لديك عمود avatar في جدول users)
+                    ]
+                );
+
+                // 3. تحديث توكن الإشعارات إذا تم إرساله من فلاتر
+                if ($request->has('fcm_token')) {
+                    $user->fcm_token = $request->fcm_token;
+                    $user->save();
+                }
+
+                // 4. إنشاء توكن حقيقي (Sanctum)
+                $token = $user->createToken('auth_token')->plainTextToken;
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'تم الدخول بنجاح',
+                    'token' => $token, // التوكن الحقيقي
+                    'user' => $user // بياناتك الحقيقية
+                ], 200);
+            } else {
+                return response()->json(['status' => false, 'message' => 'توكن جوجل غير صالح'], 401);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Google Sign In Error: ' . $e->getMessage());
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
 }
