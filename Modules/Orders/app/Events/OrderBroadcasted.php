@@ -76,6 +76,7 @@ class OrderBroadcasted implements ShouldBroadcast
             'id' => $this->order->id,
             'order_number' => $this->order->order_number,
             'total' => (float) $this->order->total,
+            'driver_commission' => (float) $this->order->driver_commission,
             'status' => $this->order->status,
             'payment_method' => $this->order->payment_method,
             'payment_status' => $this->order->payment_status,

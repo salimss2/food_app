@@ -14,9 +14,13 @@ class CartController extends Controller
     {
         $user = $request->user();
         $cart = Cart::firstOrCreate(['user_id' => $user->id]);
-        $items = CartItem::where('cart_id', $cart->id)->get();
+
+        $items = CartItem::with(['meal.restaurant'])
+            ->where('cart_id', $cart->id)
+            ->get();
 
         return response()->json([
+            'status' => true,
             'cart' => $cart,
             'items' => $items
         ]);

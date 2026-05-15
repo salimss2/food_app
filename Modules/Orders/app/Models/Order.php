@@ -21,8 +21,10 @@ class Order extends Model
         'driver_id',
         'payment_method',
         'total',
+        'total_price',
         'status',
         'scheduled_at',
+        'customer_notes',
         'payment_status',
         'receipt_image',
         'rejection_reason',
@@ -30,6 +32,12 @@ class Order extends Model
         'latitude',
         'longitude',
         'driver_earning',
+        'delivery_distance',
+        'delivery_fee',
+        'driver_commission',
+        'platform_commission',
+        'delivery_lat',
+        'delivery_lng',
     ];
 
     /**

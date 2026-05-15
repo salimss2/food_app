@@ -18,7 +18,14 @@ class OrderItem extends Model
         'order_id',
         'meal_id',
         'quantity',
+        'price',
         'subtotal',
+        'customizations',
+        'special_instructions',
+    ];
+
+    protected $casts = [
+        'customizations' => 'array',
     ];
 
     /**

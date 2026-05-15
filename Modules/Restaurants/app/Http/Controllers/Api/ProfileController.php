@@ -18,7 +18,8 @@ use Modules\Restaurants\Http\Resources\RestaurantResource;
  *
  * Routes (all protected by auth:sanctum):
  *   GET   /api/v1/profile                          — view profile + restaurant info
- *   POST  /api/v1/profile/update                   — update name, phone, profile_picture ONLY
+ *   POST  /api/v1/profile/update                   — update name, phone ONLY (image moved to restaurant)
+ *   POST  /api/v1/restaurant/update                — update restaurant name, location, logo, desc, phone
  *   PATCH /api/v1/profile/toggle-restaurant-status — toggle open/closed
  */
 class ProfileController extends Controller
@@ -36,20 +37,16 @@ class ProfileController extends Controller
         $user = Auth::user();
         $user->load('restaurant');
 
-        ob_clean();
         return response()->json([
-            'status' => 'success',
+            'status' => true,
             'data' => [
                 'id' => $user->id,
-                'user_name' => $user->name,
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'profile_picture' => $user->profile_picture
                     ? asset('storage/' . $user->profile_picture)
                     : null,
-                'restaurant_name' => $user->restaurant ? $user->restaurant->name : null,
-                'status' => $user->restaurant ? $user->restaurant->status : null,
                 'restaurant' => $user->restaurant
                     ? new RestaurantResource($user->restaurant)
                     : null,
@@ -61,9 +58,8 @@ class ProfileController extends Controller
     /**
      * POST /api/v1/profile/update
      *
-     * STRICTLY updates only 3 fields: name, phone, profile_picture.
-     * Requests attempting to update email or restaurant_name are silently ignored.
-     * Supports multipart/form-data for image upload.
+     * Updates user's personal details: name, phone.
+     * Note: Profile picture logic has been moved to Restaurant Logo as per new flow.
      *
      * @param  Request  $request
      * @return JsonResponse
@@ -75,41 +71,20 @@ class ProfileController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
-            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:3072',
         ]);
 
         if ($validator->fails()) {
-            ob_clean();
             return response()->json([
                 'status' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
 
-        // --- Update only the 3 allowed user fields ---
-        $userData = [
+        $user->update([
             'name' => $request->name,
             'phone' => $request->phone,
-            // email and restaurant_name are intentionally excluded.
-        ];
+        ]);
 
-        // --- Handle profile picture upload ---
-        if ($request->hasFile('profile_picture')) {
-            // Delete old picture from storage to avoid orphaned files.
-            if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
-                Storage::disk('public')->delete($user->profile_picture);
-            }
-
-            $file = $request->file('profile_picture');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->storeAs('users/profiles', $filename, 'public');
-            $userData['profile_picture'] = 'users/profiles/' . $filename;
-        }
-
-        $user->update($userData);
-        $user->refresh();
-
-        ob_clean();
         return response()->json([
             'status' => true,
             'message' => 'Profile updated successfully.',
@@ -118,9 +93,6 @@ class ProfileController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
-                'profile_picture' => $user->profile_picture
-                    ? asset('storage/' . $user->profile_picture)
-                    : null,
             ],
         ]);
     }
@@ -154,10 +126,71 @@ class ProfileController extends Controller
             'new_status' => $newStatus,
         ]);
 
-        ob_clean();
         return response()->json([
             'status' => true,
             'message' => "Restaurant is now {$newStatus}.",
+            'data' => new RestaurantResource($restaurant->fresh()),
+        ]);
+    }
+
+    /**
+     * POST /api/v1/restaurant/update
+     *
+     * Updates the authenticated owner's restaurant information including logo.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
+    public function updateRestaurant(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $restaurant = $user->restaurant;
+
+        if (!$restaurant) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No restaurant associated with this account.',
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'location' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'phone' => 'nullable|string|max:20',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:3072',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $restaurant->name = $request->name;
+        $restaurant->location = $request->location;
+        $restaurant->description = $request->description;
+        $restaurant->phone = $request->phone;
+
+        // Handle Logo Upload
+        if ($request->hasFile('logo')) {
+            // Delete old logo from storage
+            if ($restaurant->logo && Storage::disk('public')->exists($restaurant->logo)) {
+                Storage::disk('public')->delete($restaurant->logo);
+            }
+
+            $file = $request->file('logo');
+            $filename = time() . '_logo_' . $user->id . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('restaurants/logos', $filename, 'public');
+            $restaurant->logo = $path;
+        }
+
+        $restaurant->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Restaurant information updated successfully.',
             'data' => new RestaurantResource($restaurant->fresh()),
         ]);
     }

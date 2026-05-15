@@ -25,9 +25,12 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
     // Show: GET  /api/v1/restaurant/orders/{id}
     // Upd:  PATCH /api/v1/restaurant/orders/{id}/status
     Route::prefix('restaurant')->group(function () {
-        Route::get('orders', [RestaurantOrderController::class, 'index']);
+        Route::get('orders/scheduled', [RestaurantOrderController::class, 'getScheduledOrders']);
+        // Route::get('orders', [RestaurantOrderController::class, 'index']); // Commented out to avoid conflict
+        Route::get('orders', [OrdersController::class, 'restaurantOrders']); // New method in OrdersController
         Route::get('orders/{id}', [RestaurantOrderController::class, 'show']);
         Route::patch('orders/{id}/status', [RestaurantOrderController::class, 'updateStatus']);
+        Route::put('orders/{id}/status', [OrdersController::class, 'updateRestaurantOrderStatus']);
     });
     //     Route::get('/', [CartController::class, 'index']);           // جلب محتويات السلة
     // Route::post('/add', [CartController::class, 'add']);         // إضافة وجبة للسلة

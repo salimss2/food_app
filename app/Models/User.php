@@ -27,6 +27,7 @@ class User extends Authenticatable
         'email',
         'password',
         'phone',
+        'profile_picture',
         'status',
         'fcm_token',
         'otp_code',
@@ -34,32 +35,41 @@ class User extends Authenticatable
     ];
 
 
-    
-    // public function orders() {
-    // return $this->hasMany(Order::class); // تأكد أن جدول الطلبات موجود
 
-//     public function restaurant() {
+    public function driverOrders()
+    {
+        return $this->hasMany(\Modules\Orders\Models\Order::class, 'driver_id');
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(\Modules\Orders\Models\Order::class, 'user_id');
+    }
+
+    //     public function restaurant() {
 //     return $this->hasOne(Restaurant::class);
 // }
 
-// 1. علاقة البروفايل العام (لكل المستخدمين)
+    // 1. علاقة البروفايل العام (لكل المستخدمين)
     // public function profile() {
     //     return $this->hasOne(Profile::class);
     // }
 
     // 2. علاقة بيانات السائق (تظهر فقط إذا كان المستخدم موصل)
-    public function driverProfile() {
+    public function driverProfile()
+    {
         return $this->hasOne(\Modules\Auth\Models\DriverProfile::class, 'user_id');
     }
-    
-    public function availability() {
+
+    public function availability()
+    {
         return $this->hasOne(\App\Models\DriverAvailability::class, 'driver_id');
     }
 
     // 3. علاقة المطعم (تظهر فقط إذا كان المستخدم صاحب مطعم)
     public function restaurant()
     {
-        return $this->hasOne(Restaurant::class, 'owner_id');
+        return $this->hasOne(\Modules\Restaurants\Models\Restaurant::class, 'owner_id');
     }
 
     public function favorites()
@@ -67,29 +77,29 @@ class User extends Authenticatable
         return $this->hasMany(\Modules\Users\Models\Favorite::class);
     }
 
-public function owner()
-{
-    return $this->belongsTo(User::class, 'user_id');
-}
-public function profile()
-{
-    return $this->hasOne(Profile::class);
-}
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+    public function profile()
+    {
+        return $this->hasOne(Profile::class);
+    }
 
-// دالة حذف بيانات المرتبطة
-protected static function booted()
-{
-    static::deleting(function ($user) {
-        // حذف الأدوار والصلاحيات المرتبطة قبل حذف المستخدم
-        $user->roles()->detach();
-        $user->permissions()->detach();
-        
-        // وإذا أردت حذف البروفايل أيضاً:
-        if($user->driverProfile) {
-            $user->driverProfile()->delete();
-        }
-    });
-}
+    // دالة حذف بيانات المرتبطة
+    protected static function booted()
+    {
+        static::deleting(function ($user) {
+            // حذف الأدوار والصلاحيات المرتبطة قبل حذف المستخدم
+            $user->roles()->detach();
+            $user->permissions()->detach();
+
+            // وإذا أردت حذف البروفايل أيضاً:
+            if ($user->driverProfile) {
+                $user->driverProfile()->delete();
+            }
+        });
+    }
 
 }
 
@@ -141,9 +151,9 @@ protected static function booted()
 //     {
 //         // تأكد أنك كتبت مسار موديل الـ Role الصحيح هنا
 //         return $this->belongsToMany(Role::class, 'user_roles');
-        
+
 //     }
-    
+
 //     /**
 //      * الدالة التي سألت عنها: للتحقق من امتلاك دور معين
 //      */

@@ -27,6 +27,12 @@ class ScheduledOrder extends Model
         'items_content',
         'scheduled_at',
         'status',
+        'latitude',
+        'longitude',
+        'delivery_distance',
+        'delivery_fee',
+        'driver_commission',
+        'platform_commission',
     ];
 
     /**
@@ -35,7 +41,7 @@ class ScheduledOrder extends Model
     protected $casts = [
         'scheduled_at' => 'datetime',
         'total_amount' => 'decimal:2',
-        'items_count'  => 'integer',
+        'items_count' => 'integer',
         'items_content' => 'array',
     ];
 

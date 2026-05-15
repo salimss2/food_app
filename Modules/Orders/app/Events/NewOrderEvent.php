@@ -34,7 +34,7 @@ class NewOrderEvent implements ShouldBroadcastNow
      */
     public function __construct(Order $order, int $ownerId)
     {
-        $this->order   = $order->loadMissing('items.meal', 'user', 'restaurant');
+        $this->order = $order->loadMissing('items.meal', 'user', 'restaurant');
         $this->ownerId = $ownerId;
     }
 
@@ -64,28 +64,29 @@ class NewOrderEvent implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         $items = $this->order->items->map(fn($item) => [
-            'id'        => $item->id,
-            'meal_id'   => $item->meal_id,
+            'id' => $item->id,
+            'meal_id' => $item->meal_id,
             'meal_name' => $item->meal->name ?? 'Unknown',
-            'quantity'  => $item->quantity,
-            'subtotal'  => (float) $item->subtotal,
+            'quantity' => $item->quantity,
+            'subtotal' => (float) $item->subtotal,
         ]);
 
         return [
-            'id'             => $this->order->id,
-            'order_number'   => $this->order->order_number,
-            'status'         => $this->order->status,
-            'total'          => (float) $this->order->total,
+            'id' => $this->order->id,
+            'order_number' => $this->order->order_number,
+            'status' => $this->order->status,
+            'total' => (float) $this->order->total,
+            'driver_commission' => (float) $this->order->driver_commission,
             'payment_method' => $this->order->payment_method,
             'payment_status' => $this->order->payment_status,
-            'created_at'     => $this->order->created_at?->toISOString(),
-            'customer'       => [
-                'id'    => $this->order->user?->id,
-                'name'  => $this->order->user?->name ?? 'Unknown',
+            'created_at' => $this->order->created_at?->toISOString(),
+            'customer' => [
+                'id' => $this->order->user?->id,
+                'name' => $this->order->user?->name ?? 'Unknown',
                 'phone' => $this->order->user?->phone ?? null,
             ],
-            'items'          => $items,
-            'items_count'    => $items->count(),
+            'items' => $items,
+            'items_count' => $items->count(),
         ];
     }
 }

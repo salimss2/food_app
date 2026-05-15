@@ -23,9 +23,18 @@ class Restaurant extends Model
         'owner_id',
         'user_id',
         'logo',
+        'description',
+        'phone',
         'account_status',
         'is_open'
     ];
+
+    protected $appends = ['is_open', 'logo_url'];
+
+    public function getIsOpenAttribute()
+    {
+        return $this->status === 'open';
+    }
 
     public function owner()
     {

@@ -37,7 +37,10 @@ class RestaurantOrderController extends Controller
      * GET /api/v1/restaurant/orders
      *
      * Returns orders for the authenticated owner's restaurant,
-     * optionally filtered by tab via ?status={new|in_progress|ready|all}
+     * optionally filtered by tab via ?status={pending|processing|ready|delivered|cancelled|all}
+     *
+     * CRITICAL LOGIC: If status=pending, ONLY return orders where scheduled_at is NULL
+     * or scheduled_at is within the next 30 minutes.
      *
      * @param  Request  $request
      * @return JsonResponse
@@ -46,7 +49,6 @@ class RestaurantOrderController extends Controller
     {
         $user = Auth::user();
 
-        // Guard: ensure this user has a restaurant.
         if (!$user->restaurant) {
             return response()->json([
                 'status' => false,
@@ -55,22 +57,55 @@ class RestaurantOrderController extends Controller
         }
 
         $restaurantId = $user->restaurant->id;
+        $statusParam = $request->query('status', 'all');
 
         $query = Order::with(['items.meal', 'user'])
             ->where('restaurant_id', $restaurantId)
             ->latest();
 
-        // Apply status filter based on the Flutter tab parameter.
-        $statusParam = $request->query('status', 'all');
-        $statusFilter = self::STATUS_MAP[$statusParam] ?? null;
-
-        if ($statusFilter !== null) {
-            $query->whereIn('status', $statusFilter);
+        if ($statusParam === 'pending') {
+            $query->where('status', 'pending')
+                ->where(function ($q) {
+                    $q->whereNull('scheduled_at')
+                        ->orWhere('scheduled_at', '<=', now()->addMinutes(30));
+                });
+        } elseif ($statusParam !== 'all') {
+            $query->where('status', $statusParam);
         }
 
         $orders = $query->get();
 
-        ob_clean();
+        return response()->json([
+            'status' => true,
+            'data' => OrderResource::collection($orders),
+        ]);
+    }
+
+    /**
+     * GET /api/v1/restaurant/orders/scheduled
+     *
+     * Fetch ALL future scheduled orders where scheduled_at is strictly
+     * greater than 30 mins from now.
+     *
+     * @return JsonResponse
+     */
+    public function getScheduledOrders(): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!$user->restaurant) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No restaurant associated with this account.',
+            ], 404);
+        }
+
+        $orders = Order::with(['items.meal', 'user'])
+            ->where('restaurant_id', $user->restaurant->id)
+            ->where('scheduled_at', '>', now()->addMinutes(30))
+            ->orderBy('scheduled_at', 'asc')
+            ->get();
+
         return response()->json([
             'status' => true,
             'data' => OrderResource::collection($orders),

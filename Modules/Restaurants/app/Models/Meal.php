@@ -26,6 +26,10 @@ class Meal extends Model
         'available',
     ];
 
+    protected $casts = [
+        'available' => 'boolean',
+    ];
+
     protected $appends = ['image_url'];
 
     public function getImageUrlAttribute()

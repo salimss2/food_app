@@ -55,56 +55,69 @@ class DriverOrderController extends Controller
     public function acceptOrder(Request $request, $id)
     {
         try {
-            DB::beginTransaction();
+            return DB::transaction(function () use ($id) {
+                // 1. Fetch order with pessimistic lock to prevent race conditions
+                $order = Order::lockForUpdate()->find($id);
 
-            $order = Order::lockForUpdate()->findOrFail($id);
+                if (!$order) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'عذراً، لم يتم العثور على هذا الطلب!'
+                    ], 404);
+                }
 
-            if ($order->status !== 'pending_driver_acceptance' || $order->driver_id !== null) {
-                DB::rollBack();
+                // 2. Validation: Ensure order is still in 'pending_driver_acceptance' state
+                if ($order->status !== 'pending_driver_acceptance' || !is_null($order->driver_id)) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'عذراً، لقد سبقك موصل آخر وقبل هذا الطلب!'
+                    ], 400);
+                }
+
+                $driverId = Auth::id() ?? 1; // Fallback for testing if needed
+
+                // 3. Update Order Status to 'accepted'
+                $order->update([
+                    'status' => 'accepted',
+                    'driver_id' => $driverId
+                ]);
+
+                // 4. Create Delivery Task
+                DeliveryTask::create([
+                    'order_id' => $order->id,
+                    'driver_id' => $driverId,
+                    'status' => 'on_way',
+                    'pickup_time' => now(),
+                ]);
+
+                // 5. Log Tracking Event
+                DB::table('order_tracking')->insert([
+                    'order_id' => $order->id,
+                    'status' => 'accepted_by_driver',
+                    'updated_at' => now(),
+                ]);
+
+                // 6. Update Driver Status to 'busy' (now safe in ENUM)
+                \Modules\Users\Models\DriverStatus::updateOrCreate(
+                    ['driver_id' => $driverId],
+                    ['availability' => 'busy']
+                );
+
+                // 7. Standardized API Response
                 return response()->json([
-                    'status' => false,
-                    'message' => 'عذراً، لقد سبقك موصل آخر وقبل هذا الطلب!'
-                ], 400);
-            }
-
-            $driverId = Auth::id() ?? 1;
-
-            $order->update([
-                'status' => 'accepted',
-                'driver_id' => $driverId
-            ]);
-
-            DeliveryTask::create([
-                'order_id' => $order->id,
-                'driver_id' => $driverId,
-                'status' => 'on_way',
-                'pickup_time' => now(),
-            ]);
-
-            DB::table('order_tracking')->insert([
-                'order_id' => $order->id,
-                'status' => 'accepted_by_driver',
-                'updated_at' => now(),
-            ]);
-
-            \Modules\Users\Models\DriverStatus::updateOrCreate(
-                ['driver_id' => $driverId],
-                ['availability' => 'busy']
-            );
-
-            DB::commit();
-
-            return response()->json([
-                'status' => true,
-                'message' => 'تم قبول الطلب بنجاح، بالتوفيق في رحلتك!',
-                'order_id' => $order->id
-            ]);
-
+                    'status' => true,
+                    'message' => 'تم قبول الطلب بنجاح، بالتوفيق في رحلتك!',
+                    'data' => [
+                        'order_id' => (int) $order->id,
+                        'new_status' => 'accepted',
+                        'driver_status' => 'busy'
+                    ]
+                ]);
+            });
         } catch (\Exception $e) {
-            DB::rollback();
             return response()->json([
                 'status' => false,
-                'message' => 'حدث خطأ فني أثناء قبول الطلب',
+                'message' => 'حدث خطأ فني أثناء قبول الطلب، يرجى المحاولة لاحقاً',
                 'error' => $e->getMessage()
             ], 500);
         }

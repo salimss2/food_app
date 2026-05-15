@@ -89,6 +89,7 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
     // Commissions (New Placeholder Routes)
     Route::get('/commissions', [\Modules\Admin\Http\Controllers\AdminCommissionController::class, 'index'])->name('admin.commissions.index')->middleware('permission:view_financials');
     Route::post('/commissions/{id}/settle', [\Modules\Admin\Http\Controllers\AdminCommissionController::class, 'settle'])->name('admin.commissions.settle')->middleware('permission:manage_commissions');
+    Route::get('/api/driver-wallets', [\Modules\Admin\Http\Controllers\AdminCommissionController::class, 'getDriverWalletSummaries'])->name('admin.api.driver-wallets')->middleware('permission:view_financials');
 
     // Complaints (New Placeholder Routes)
     Route::get('/complaints', [\Modules\Admin\Http\Controllers\AdminComplaintController::class, 'index'])->name('admin.complaints.index')->middleware('permission:view_complaints');
@@ -172,4 +173,8 @@ Route::prefix('admin')->group(function () {
     Route::get('/commissions-restaurant', function () {
         return view('admin::commissions-restaurant');
     })->name('admin.commissions-restaurant.index');
+    Route::get('/commissions-settings', [\Modules\Admin\Http\Controllers\CommissionSettingsController::class, 'index'])->name('admin.commissions-settings.index');
+    Route::post('/commissions-settings', [\Modules\Admin\Http\Controllers\CommissionSettingsController::class, 'store'])->name('admin.commissions-settings.store');
+    Route::put('/commissions-settings/{id}', [\Modules\Admin\Http\Controllers\CommissionSettingsController::class, 'update'])->name('admin.commissions-settings.update');
+    Route::delete('/commissions-settings/{id}', [\Modules\Admin\Http\Controllers\CommissionSettingsController::class, 'destroy'])->name('admin.commissions-settings.destroy');
 });
