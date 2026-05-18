@@ -60,6 +60,19 @@ return [
             'report' => false,
         ],
 
+        'firebase_s3' => [
+            'driver' => 's3',
+            'key' => env('FIREBASE_STORAGE_ACCESS_KEY_ID'),
+            'secret' => env('FIREBASE_STORAGE_SECRET_ACCESS_KEY'),
+            'region' => env('FIREBASE_STORAGE_DEFAULT_REGION'),
+            'bucket' => env('FIREBASE_STORAGE_BUCKET'),
+            'url' => env('FIREBASE_STORAGE_URL'),
+            'endpoint' => env('FIREBASE_STORAGE_ENDPOINT'),
+            'use_path_style_endpoint' => env('firebase_AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*
