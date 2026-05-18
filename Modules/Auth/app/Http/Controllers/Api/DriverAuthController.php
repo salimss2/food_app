@@ -35,6 +35,28 @@ class DriverAuthController extends Controller
             ], 401);
         }
 
+        // فحص حالة الحظر
+        if ($user->status !== 'active') {
+            return response()->json([
+                'status' => false,
+                'message' => 'تم حظر حسابك. يرجى التواصل مع الإدارة.'
+            ], 403);
+        }
+
+        // فحص الصلاحية والدور المخصص للسائق
+        $isDriver = $user->hasRole('Driver') || $user->hasRole('driver');
+        if (!$isDriver) {
+            $user->tokens()->delete();
+            \Illuminate\Support\Facades\Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return response()->json([
+                'status' => false,
+                'message' => 'غير مصرح لك بالدخول إلى هذا التطبيق. يرجى استخدام التطبيق المخصص لحسابك.'
+            ], 403);
+        }
+
         // Update FCM token if provided
         if ($request->has('fcm_token')) {
             $user->update(['fcm_token' => $request->fcm_token]);
