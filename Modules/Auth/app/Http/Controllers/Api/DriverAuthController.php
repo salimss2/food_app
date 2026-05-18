@@ -87,13 +87,14 @@ class DriverAuthController extends Controller
 
             // حذف الصورة القديمة
             if ($profile->avatar_url) {
-                $oldPath = str_replace(asset('storage/'), '', $profile->avatar_url);
+                $oldPath = str_replace([asset('storage/'), \Illuminate\Support\Facades\Storage::url('')], '', $profile->avatar_url);
+                $oldPath = ltrim($oldPath, '/');
                 Storage::disk('s3')->delete($oldPath);
             }
 
             // تخزين الصورة الجديدة
             $path = $request->file('avatar')->store('avatars', 's3');
-            $fullUrl = asset('storage/' . $path);
+            $fullUrl = \Illuminate\Support\Facades\Storage::url($path);
 
             // تحديث البروفايل
             $profile->update(['avatar_url' => $fullUrl]);
@@ -163,11 +164,12 @@ class DriverAuthController extends Controller
 
             if ($request->hasFile('avatar')) {
                 if ($profile->avatar_url) {
-                    $oldPath = str_replace(asset('storage/'), '', $profile->avatar_url);
+                    $oldPath = str_replace([asset('storage/'), \Illuminate\Support\Facades\Storage::url('')], '', $profile->avatar_url);
+                    $oldPath = ltrim($oldPath, '/');
                     Storage::disk('s3')->delete($oldPath);
                 }
                 $path = $request->file('avatar')->store('avatars', 's3');
-                $profile->avatar_url = asset('storage/' . $path);
+                $profile->avatar_url = \Illuminate\Support\Facades\Storage::url($path);
             }
 
             if ($request->has('address')) {

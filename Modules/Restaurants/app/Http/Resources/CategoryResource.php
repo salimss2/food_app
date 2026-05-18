@@ -17,7 +17,7 @@ class CategoryResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'image' => $this->image ? asset('storage/' . $this->image) : asset('assets/default-category.png'),
+            'image' => $this->image ? \Illuminate\Support\Facades\Storage::url($this->image) : asset('assets/default-category.png'),
             'image_full_url' => $this->image_full_url,
             'meals' => MealResource::collection($this->whenLoaded('meals')),
             'created_at' => $this->created_at,

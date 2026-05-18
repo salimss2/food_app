@@ -111,7 +111,7 @@
                     <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 w-full lg:w-auto">
                         <div class="relative">
                             <img class="w-24 h-24 rounded-xl border-4 border-indigo-50 shadow-md object-cover"
-                                src="{{ asset('storage/' . (str_contains($restaurant->logo, "/") ? $restaurant->logo : "restaurants/logos/" . $restaurant->logo)) }}"
+                                src="{{ \Illuminate\Support\Facades\Storage::url(str_contains($restaurant->logo, "/") ? $restaurant->logo : "restaurants/logos/" . $restaurant->logo) }}"
                                 alt="{{ $restaurant->name }}">
                             <div class="absolute -bottom-2 -right-2 {{ $restaurant->status === "open" ? "bg-green-500" : "bg-red-500" }} w-6 h-6 rounded-full border-2 border-white shadow-sm flex items-center justify-center"
                                 title="{{ $restaurant->status === "open" ? __("Open Now") : __("Closed") }}">
@@ -453,7 +453,7 @@
                                             @foreach($restaurant->mealCategories as $category)
                                                 <button onclick="filterMeals({{ $category->id }})"
                                                     class="text-gray-500 hover:text-gray-900 px-3 py-1.5 text-xs font-bold transition-colors flex items-center">
-                                                    <img src="{{ $category->image ? asset('storage/' . $category->image) : 'https://ui-avatars.com/api/?name=' . urlencode($category->name) . '&color=7F9CF5&background=EBF4FF' }}"
+                                                    <img src="{{ $category->image ? \Illuminate\Support\Facades\Storage::url($category->image) : 'https://ui-avatars.com/api/?name=' . urlencode($category->name) . '&color=7F9CF5&background=EBF4FF' }}"
                                                         class="w-6 h-6 rounded-full object-cover inline-block ml-2"
                                                         alt="{{ $category->name }}">
                                                     {{ $category->name }}
@@ -500,7 +500,7 @@
                                         <div class="meal-card group bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow relative"
                                             data-category-id="{{ $meal->meal_category_id }}">
                                             <div class="relative">
-                                                <img src="{{ asset('storage/' . $meal->image) }}"
+                                                <img src="{{ \Illuminate\Support\Facades\Storage::url($meal->image) }}"
                                                     class="w-full h-32 object-cover" alt="{{ $meal->name }}"
                                                     onerror="this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=200&fit=crop'">
 

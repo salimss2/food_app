@@ -61,7 +61,7 @@ class OfferController extends Controller
                 'restaurant' => $offer->restaurant ? [
                     'id' => (int) $offer->restaurant->id,
                     'name' => $offer->restaurant->name,
-                    'logo' => $offer->restaurant->logo ? asset('storage/' . $offer->restaurant->logo) : asset('assets/default-logo.png'),
+                    'logo' => $offer->restaurant->logo ? \Illuminate\Support\Facades\Storage::url(str_contains($offer->restaurant->logo, '/') ? $offer->restaurant->logo : 'restaurants/logos/' . $offer->restaurant->logo) : asset('assets/default-logo.png'),
                 ] : null,
                 'meals' => $offer->meals->map(function ($meal) {
                     return [

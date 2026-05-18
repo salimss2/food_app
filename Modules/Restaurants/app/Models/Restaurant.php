@@ -36,13 +36,13 @@ class Restaurant extends Model
 
     public function getImageUrlAttribute()
     {
-        return $this->image_path ? \Illuminate\Support\Facades\Storage::disk('s3')->url($this->image_path) : null;
+        return $this->image_path ? \Illuminate\Support\Facades\Storage::url($this->image_path) : null;
     }
 
     protected function logoFullUrl(): \Illuminate\Database\Eloquent\Casts\Attribute
     {
         return \Illuminate\Database\Eloquent\Casts\Attribute::make(
-            get: fn () => $this->logo ? \Illuminate\Support\Facades\Storage::disk('s3')->url($this->logo) : null,
+            get: fn () => $this->logo ? \Illuminate\Support\Facades\Storage::url(str_contains($this->logo, '/') ? $this->logo : 'restaurants/logos/' . $this->logo) : null,
         );
     }
 
@@ -60,7 +60,7 @@ class Restaurant extends Model
     {
         if ($this->logo) {
             $path = str_contains($this->logo, '/') ? $this->logo : 'restaurants/logos/' . $this->logo;
-            return asset('storage/' . $path);
+            return \Illuminate\Support\Facades\Storage::url($path);
         }
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random';
     }

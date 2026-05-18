@@ -26,7 +26,7 @@ class MealResource extends JsonResource
             'discount_end' => $this->discount_end ? $this->discount_end->toISOString() : null,
             'price_after_discount' => (float) $this->price_after_discount,
             // Absolute URL so Flutter can display directly with Image.network
-            'image_url' => $this->image ? asset('storage/' . $this->image) : null,
+            'image_url' => $this->image ? \Illuminate\Support\Facades\Storage::url($this->image) : null,
             'image_full_url' => $this->image_full_url,
             'available' => (bool) $this->available,
             'is_available' => (bool) $this->available,

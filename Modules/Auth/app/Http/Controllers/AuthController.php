@@ -185,44 +185,33 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // فحص الصلاحية والدور المخصص للتطبيق بناءً على نوع الطلب بشكل صارم جداً لمنع الدخول العشوائي
+        // فحص الصلاحية والدور المخصص للتطبيق بناءً على نوع الطلب
         $appType = $request->input('app_type');
+        $isAuthorized = true;
 
-        if (empty($appType) || $appType === 'customer') {
-            // تطبيق الزبون: يجب أن يمتلك دور زبون فقط
-            if (!$user->hasRole('Customer') && !$user->hasRole('customer')) {
-                $user->tokens()->delete();
-                \Illuminate\Support\Facades\Auth::logout();
-                return response()->json([
-                    'status' => false,
-                    'message' => 'غير مصرح لك بالدخول. هذا التطبيق مخصص للزبائن فقط.'
-                ], 403);
-            }
-        } elseif ($appType === 'restaurant' || $appType === 'restaurant_admin') {
-            // تطبيق المطعم: يجب أن يمتلك دور مدير مطعم أو صاحب مطعم
-            if (!$user->hasRole('Restaurant Admin') && !$user->hasRole('restaurant_admin') && !$user->hasRole('Restaurant Owner') && !$user->hasRole('restaurant owner')) {
-                $user->tokens()->delete();
-                \Illuminate\Support\Facades\Auth::logout();
-                return response()->json([
-                    'status' => false,
-                    'message' => 'غير مصرح لك بالدخول. هذا التطبيق مخصص لأصحاب المطاعم فقط.'
-                ], 403);
-            }
+        if ($appType === 'restaurant' || $appType === 'restaurant_admin') {
+            $isAuthorized = $user->hasRole('Restaurant Admin') || $user->hasRole('restaurant_admin') || $user->hasRole('Restaurant Owner') || $user->hasRole('restaurant owner');
+        } elseif ($appType === 'customer') {
+            $isAuthorized = $user->hasRole('Customer') || $user->hasRole('customer');
         } elseif ($appType === 'driver') {
-            // تطبيق المندوب: يجب أن يمتلك دور مندوب فقط
-            if (!$user->hasRole('Driver') && !$user->hasRole('driver')) {
-                $user->tokens()->delete();
-                \Illuminate\Support\Facades\Auth::logout();
-                return response()->json([
-                    'status' => false,
-                    'message' => 'غير مصرح لك بالدخول. هذا التطبيق مخصص للمناديب/السائقين فقط.'
-                ], 403);
-            }
+            $isAuthorized = $user->hasRole('Driver') || $user->hasRole('driver');
         } else {
+            // إذا لم يتم تحديد نوع التطبيق، نمنع الموصل من الدخول إلى تطبيق الزبائن والمطاعم
+            if (($user->hasRole('Driver') || $user->hasRole('driver')) && !$user->hasAnyRole(['Customer', 'customer', 'Restaurant Admin', 'restaurant_admin', 'Restaurant Owner', 'restaurant owner'])) {
+                $isAuthorized = false;
+            }
+        }
+
+        if (!$isAuthorized) {
+            $user->tokens()->delete();
+            \Illuminate\Support\Facades\Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
             return response()->json([
                 'status' => false,
-                'message' => 'نوع التطبيق غير معروف.'
-            ], 400);
+                'message' => 'غير مصرح لك بالدخول إلى هذا التطبيق. يرجى استخدام التطبيق المخصص لحسابك.'
+            ], 403);
         }
 
         // حذف التوكنات القديمة
@@ -412,44 +401,33 @@ class AuthController extends Controller
                     ], 403);
                 }
 
-                // فحص الصلاحية والدور المخصص للتطبيق بناءً على نوع الطلب بشكل صارم جداً لمنع الدخول العشوائي
+                // فحص الصلاحية والدور المخصص للتطبيق بناءً على نوع الطلب
                 $appType = $request->input('app_type');
+                $isAuthorized = true;
 
-                if (empty($appType) || $appType === 'customer') {
-                    // تطبيق الزبون: يجب أن يمتلك دور زبون فقط
-                    if (!$user->hasRole('Customer') && !$user->hasRole('customer')) {
-                        $user->tokens()->delete();
-                        \Illuminate\Support\Facades\Auth::logout();
-                        return response()->json([
-                            'status' => false,
-                            'message' => 'غير مصرح لك بالدخول. هذا التطبيق مخصص للزبائن فقط.'
-                        ], 403);
-                    }
-                } elseif ($appType === 'restaurant' || $appType === 'restaurant_admin') {
-                    // تطبيق المطعم: يجب أن يمتلك دور مدير مطعم أو صاحب مطعم
-                    if (!$user->hasRole('Restaurant Admin') && !$user->hasRole('restaurant_admin') && !$user->hasRole('Restaurant Owner') && !$user->hasRole('restaurant owner')) {
-                        $user->tokens()->delete();
-                        \Illuminate\Support\Facades\Auth::logout();
-                        return response()->json([
-                            'status' => false,
-                            'message' => 'غير مصرح لك بالدخول. هذا التطبيق مخصص لأصحاب المطاعم فقط.'
-                        ], 403);
-                    }
+                if ($appType === 'restaurant' || $appType === 'restaurant_admin') {
+                    $isAuthorized = $user->hasRole('Restaurant Admin') || $user->hasRole('restaurant_admin') || $user->hasRole('Restaurant Owner') || $user->hasRole('restaurant owner');
+                } elseif ($appType === 'customer') {
+                    $isAuthorized = $user->hasRole('Customer') || $user->hasRole('customer');
                 } elseif ($appType === 'driver') {
-                    // تطبيق المندوب: يجب أن يمتلك دور مندوب فقط
-                    if (!$user->hasRole('Driver') && !$user->hasRole('driver')) {
-                        $user->tokens()->delete();
-                        \Illuminate\Support\Facades\Auth::logout();
-                        return response()->json([
-                            'status' => false,
-                            'message' => 'غير مصرح لك بالدخول. هذا التطبيق مخصص للمناديب/السائقين فقط.'
-                        ], 403);
-                    }
+                    $isAuthorized = $user->hasRole('Driver') || $user->hasRole('driver');
                 } else {
+                    // إذا لم يتم تحديد نوع التطبيق، نمنع الموصل من الدخول إلى تطبيق الزبائن والمطاعم
+                    if (($user->hasRole('Driver') || $user->hasRole('driver')) && !$user->hasAnyRole(['Customer', 'customer', 'Restaurant Admin', 'restaurant_admin', 'Restaurant Owner', 'restaurant owner'])) {
+                        $isAuthorized = false;
+                    }
+                }
+
+                if (!$isAuthorized) {
+                    $user->tokens()->delete();
+                    \Illuminate\Support\Facades\Auth::logout();
+                    $request->session()->invalidate();
+                    $request->session()->regenerateToken();
+
                     return response()->json([
                         'status' => false,
-                        'message' => 'نوع التطبيق غير معروف.'
-                    ], 400);
+                        'message' => 'غير مصرح لك بالدخول إلى هذا التطبيق. يرجى استخدام التطبيق المخصص لحسابك.'
+                    ], 403);
                 }
 
                 // 3. تحديث توكن الإشعارات إذا تم إرساله من فلاتر

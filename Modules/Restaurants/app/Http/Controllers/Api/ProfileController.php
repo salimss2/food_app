@@ -46,7 +46,7 @@ class ProfileController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'profile_picture' => $user->profile_picture
-                    ? asset('storage/' . $user->profile_picture)
+                    ? \Illuminate\Support\Facades\Storage::url($user->profile_picture)
                     : null,
                 'restaurant' => $user->restaurant
                     ? new RestaurantResource($user->restaurant)

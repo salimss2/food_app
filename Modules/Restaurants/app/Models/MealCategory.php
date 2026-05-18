@@ -24,13 +24,13 @@ class MealCategory extends Model
 
     public function getImageUrlAttribute()
     {
-        return $this->image ? asset('storage/' . $this->image) : asset('assets/default-category.png');
+        return $this->image ? \Illuminate\Support\Facades\Storage::url($this->image) : asset('assets/default-category.png');
     }
 
     protected function imageFullUrl(): \Illuminate\Database\Eloquent\Casts\Attribute
     {
         return \Illuminate\Database\Eloquent\Casts\Attribute::make(
-            get: fn() => $this->image ? \Illuminate\Support\Facades\Storage::disk('s3')->url($this->image) : null,
+            get: fn() => $this->image ? \Illuminate\Support\Facades\Storage::url($this->image) : null,
         );
     }
 

@@ -21,7 +21,7 @@ class Offer extends Model
 
     public function getImageUrlAttribute()
     {
-        return $this->image ? asset('storage/' . $this->image) : asset('assets/default-offer.png');
+        return $this->image ? \Illuminate\Support\Facades\Storage::url($this->image) : asset('assets/default-offer.png');
     }
 
     public function meals(): \Illuminate\Database\Eloquent\Relations\BelongsToMany

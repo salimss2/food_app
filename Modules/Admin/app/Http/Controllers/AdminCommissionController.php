@@ -71,7 +71,7 @@ class AdminCommissionController extends Controller
                 'cashInHand' => $cash,
                 'netBalance' => $earnings - $cash,
                 'avatar' => $driver->profile_picture
-                    ? asset('storage/' . $driver->profile_picture)
+                    ? \Illuminate\Support\Facades\Storage::url($driver->profile_picture)
                     : "https://ui-avatars.com/api/?name=" . urlencode($driver->name) . "&color=fff&background=4f46e5"
             ];
         });

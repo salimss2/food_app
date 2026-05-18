@@ -40,13 +40,14 @@ class Meal extends Model
 
     public function getImageUrlAttribute()
     {
-        return $this->image_path ? \Illuminate\Support\Facades\Storage::disk('s3')->url($this->image_path) : null;
+        $path = $this->image ?: $this->image_path;
+        return $path ? \Illuminate\Support\Facades\Storage::url($path) : null;
     }
 
     protected function imageFullUrl(): \Illuminate\Database\Eloquent\Casts\Attribute
     {
         return \Illuminate\Database\Eloquent\Casts\Attribute::make(
-            get: fn () => $this->image ? \Illuminate\Support\Facades\Storage::disk('s3')->url($this->image) : null,
+            get: fn () => $this->image ? \Illuminate\Support\Facades\Storage::url($this->image) : null,
         );
     }
 

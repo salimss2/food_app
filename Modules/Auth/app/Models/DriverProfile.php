@@ -36,16 +36,16 @@ class DriverProfile extends Model
                 if (!$this->avatar_url) {
                     return null;
                 }
-                $storageBase = asset('storage/');
-                if (str_starts_with($this->avatar_url, $storageBase)) {
-                    $path = str_replace($storageBase, '', $this->avatar_url);
-                    $path = ltrim($path, '/');
-                    return \Illuminate\Support\Facades\Storage::disk('s3')->url($path);
-                }
                 if (str_starts_with($this->avatar_url, 'http://') || str_starts_with($this->avatar_url, 'https://')) {
+                    $storageBase = asset('storage/');
+                    if (str_starts_with($this->avatar_url, $storageBase)) {
+                        $path = str_replace($storageBase, '', $this->avatar_url);
+                        $path = ltrim($path, '/');
+                        return \Illuminate\Support\Facades\Storage::url($path);
+                    }
                     return $this->avatar_url;
                 }
-                return \Illuminate\Support\Facades\Storage::disk('s3')->url($this->avatar_url);
+                return \Illuminate\Support\Facades\Storage::url($this->avatar_url);
             }
         );
     }
