@@ -27,7 +27,7 @@ class OrdersController extends Controller
     // =========================================================================
     public function index(Request $request)
     {
-        $orders = Order::with(['items.meal', 'restaurant', 'user.profile'])
+        $orders = Order::with(['items.meal', 'items.offer', 'restaurant', 'user.profile'])
             ->where('user_id', $request->user()->id)
             ->latest()
             ->get();

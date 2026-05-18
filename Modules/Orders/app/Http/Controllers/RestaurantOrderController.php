@@ -59,7 +59,7 @@ class RestaurantOrderController extends Controller
         $restaurantId = $user->restaurant->id;
         $statusParam = $request->query('status', 'all');
 
-        $query = Order::with(['items.meal', 'user'])
+        $query = Order::with(['items.meal', 'items.offer', 'user'])
             ->where('restaurant_id', $restaurantId)
             ->latest();
 
@@ -100,7 +100,7 @@ class RestaurantOrderController extends Controller
             ], 404);
         }
 
-        $orders = Order::with(['items.meal', 'user'])
+        $orders = Order::with(['items.meal', 'items.offer', 'user'])
             ->where('restaurant_id', $user->restaurant->id)
             ->where('scheduled_at', '>', now()->addMinutes(30))
             ->orderBy('scheduled_at', 'asc')
@@ -165,7 +165,7 @@ class RestaurantOrderController extends Controller
             ], 404);
         }
 
-        $order = Order::with(['items.meal', 'user'])
+        $order = Order::with(['items.meal', 'items.offer', 'user'])
             ->where('restaurant_id', $user->restaurant->id)
             ->findOrFail($id);
 
@@ -220,7 +220,7 @@ class RestaurantOrderController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Order status updated successfully.',
-            'data' => new OrderResource($order->load('items.meal', 'user')),
+            'data' => new OrderResource($order->load('items.meal', 'items.offer', 'user')),
         ]);
     }
 }

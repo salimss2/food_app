@@ -28,7 +28,17 @@ class OrderItemResource extends JsonResource
             'combo_meals' => $this->combo_meals,
             'customizations' => $this->customizations,
             'special_instructions' => $this->special_instructions,
-            'meal' => new MealResource($this->whenLoaded('meal')),
+            'meal' => $this->whenLoaded('meal', function () {
+                return $this->meal ? new MealResource($this->meal) : null;
+            }),
+            'offer' => $this->whenLoaded('offer', function () {
+                return $this->offer ? [
+                    'id' => $this->offer->id,
+                    'title' => $this->offer->title,
+                    'combo_price' => (float) $this->offer->combo_price,
+                    'image_url' => $this->offer->image_url,
+                ] : null;
+            }),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
