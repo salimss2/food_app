@@ -24,11 +24,14 @@ return new class extends Migration {
             $table->timestamps();
         });
 
-        // 2. Add rating_count to restaurants table
+        // 2. Add rating and rating_count to restaurants table
         if (Schema::hasTable('restaurants')) {
             Schema::table('restaurants', function (Blueprint $table) {
+                if (!Schema::hasColumn('restaurants', 'rating')) {
+                    $table->decimal('rating', 3, 2)->default(0.00);
+                }
                 if (!Schema::hasColumn('restaurants', 'rating_count')) {
-                    $table->integer('rating_count')->default(0)->after('rating');
+                    $table->integer('rating_count')->default(0);
                 }
             });
         }
@@ -37,10 +40,10 @@ return new class extends Migration {
         if (Schema::hasTable('driver_profiles')) {
             Schema::table('driver_profiles', function (Blueprint $table) {
                 if (!Schema::hasColumn('driver_profiles', 'rating')) {
-                    $table->decimal('rating', 3, 2)->default(0.00)->after('vehicle_vin');
+                    $table->decimal('rating', 3, 2)->default(0.00);
                 }
                 if (!Schema::hasColumn('driver_profiles', 'rating_count')) {
-                    $table->integer('rating_count')->default(0)->after('rating');
+                    $table->integer('rating_count')->default(0);
                 }
             });
         }
@@ -55,6 +58,9 @@ return new class extends Migration {
 
         if (Schema::hasTable('restaurants')) {
             Schema::table('restaurants', function (Blueprint $table) {
+                if (Schema::hasColumn('restaurants', 'rating')) {
+                    $table->dropColumn('rating');
+                }
                 if (Schema::hasColumn('restaurants', 'rating_count')) {
                     $table->dropColumn('rating_count');
                 }
