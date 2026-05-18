@@ -291,17 +291,7 @@
                                                 </path>
                                             </svg>
                                         </button>
-                                        {{-- Edit --}}
-                                        <button type="button" data-driver="{{ $editData }}"
-                                            onclick="openEditB64(this.dataset.driver)"
-                                            class="text-blue-600 hover:text-blue-900 align-middle" title="Edit">
-                                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z">
-                                                </path>
-                                            </svg>
-                                        </button>
+
                                         {{-- Delete --}}
                                         <button type="button" onclick="openDeleteModal({{ $driver->id }})"
                                             class="text-red-600 hover:text-red-900 align-middle" title="Delete">
@@ -364,14 +354,16 @@
                         <div id="driverMethodField"></div>
                         <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4 border-b border-gray-100">
                             <h3 class="text-lg font-semibold leading-6 text-gray-900 mb-4" id="driver-modal-title">
-                                {{ __('Add Driver') }}</h3>
+                                {{ __('Add Driver') }}
+                            </h3>
                             <input type="hidden" id="driverId">
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <!-- Personal Info Area -->
                                 <div>
                                     <h4 class="text-sm font-semibold text-gray-700 border-b pb-1 mb-3">
-                                        {{ __('Personal Information') }}</h4>
+                                        {{ __('Personal Information') }}
+                                    </h4>
                                     <div class="space-y-3">
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700">{{ __('Full Name') }}
@@ -429,7 +421,8 @@
                                 <!-- Vehicle Info Area -->
                                 <div>
                                     <h4 class="text-sm font-semibold text-gray-700 border-b pb-1 mb-3">
-                                        {{ __('Vehicle Information') }}</h4>
+                                        {{ __('Vehicle Information') }}
+                                    </h4>
                                     <div class="space-y-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
                                         <div>
                                             <label
@@ -467,9 +460,12 @@
                                 <div
                                     class="bg-gray-50 p-4 rounded-lg border border-gray-200 flex items-center justify-between">
                                     <div>
-                                        <h5 class="text-sm font-bold text-gray-900">{{ __('Go Online Immediately') }} (تفعيل التوفر
+                                        <h5 class="text-sm font-bold text-gray-900">{{ __('Go Online Immediately') }}
+                                            (تفعيل التوفر
                                             فوراً)</h5>
-                                        <p class="text-xs text-gray-500 mt-0.5">{{ __('Toggle on to make the driver instantly available for assignments upon saving.') }}</p>
+                                        <p class="text-xs text-gray-500 mt-0.5">
+                                            {{ __('Toggle on to make the driver instantly available for assignments upon saving.') }}
+                                        </p>
                                     </div>
                                     <label class="inline-flex relative items-center cursor-pointer">
                                         <input type="checkbox" name="is_online" value="1" class="sr-only peer">
@@ -537,7 +533,8 @@
                             <!-- Background info card -->
                             <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
                                 <h5 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                                    {{ __('Background Info') }}</h5>
+                                    {{ __('Background Info') }}
+                                </h5>
                                 <div class="space-y-2 text-sm">
                                     <p><span class="font-medium text-gray-700">{{ __('Email') }}:</span> <span
                                             class="text-gray-600" id="detailEmail"></span></p>
@@ -560,7 +557,8 @@
                                 </div>
                                 <h5
                                     class="text-xs font-bold text-indigo-800 uppercase tracking-wider mb-2 relative z-10">
-                                    {{ __('Vehicle Details') }}</h5>
+                                    {{ __('Vehicle Details') }}
+                                </h5>
                                 <div class="space-y-2 text-sm relative z-10">
                                     <p><span class="font-medium text-indigo-900">{{ __('Model') }}:</span> <span
                                             class="text-indigo-700 font-semibold" id="detailVehicleModel"></span></p>

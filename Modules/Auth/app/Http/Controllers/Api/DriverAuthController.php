@@ -43,17 +43,15 @@ class DriverAuthController extends Controller
             ], 403);
         }
 
-        // فحص الصلاحية والدور المخصص للسائق
+        // فحص الصلاحية والدور المخصص للسائق بشكل صارم جداً
         $isDriver = $user->hasRole('Driver') || $user->hasRole('driver');
         if (!$isDriver) {
             $user->tokens()->delete();
             \Illuminate\Support\Facades\Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
 
             return response()->json([
                 'status' => false,
-                'message' => 'غير مصرح لك بالدخول إلى هذا التطبيق. يرجى استخدام التطبيق المخصص لحسابك.'
+                'message' => 'غير مصرح لك بالدخول. هذا التطبيق مخصص للمناديب/السائقين فقط.'
             ], 403);
         }
 
