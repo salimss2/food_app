@@ -81,7 +81,7 @@
                                 <label for="avatar_upload" class="cursor-pointer block relative rounded-full">
                                     <img id="avatar_preview"
                                         class="w-28 h-28 rounded-full border-4 border-white shadow-md object-cover bg-white transition-opacity duration-300 group-hover:opacity-80"
-                                        src="{{ Auth::user()->image_path ? asset(Auth::user()->image_path) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&background=4f46e5&color=fff&size=128' }}"
+                                        src="{{ Auth::user()->profile_picture ? \Illuminate\Support\Facades\Storage::url(Auth::user()->profile_picture) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&background=4f46e5&color=fff&size=128' }}"
                                         alt="Avatar">
                                     <div
                                         class="absolute inset-0 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black bg-opacity-30">

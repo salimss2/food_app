@@ -41,15 +41,14 @@ class AdminProfileController extends Controller
         }
 
         if ($request->hasFile('avatar')) {
-            // Delete old avatar if exists
-            if ($user->image_path && file_exists(public_path($user->image_path))) {
-                @unlink(public_path($user->image_path));
+            // Delete old avatar if exists from public storage disk
+            if ($user->profile_picture) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->profile_picture);
             }
 
-            $file = $request->file('avatar');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('uploads/profiles'), $filename);
-            $user->image_path = 'uploads/profiles/' . $filename;
+            // Store new avatar in 'avatars' folder under public storage
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $user->profile_picture = $path;
         }
 
         $user->save();
