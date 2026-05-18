@@ -59,7 +59,7 @@ class CategoryController extends Controller
         ];
 
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('categories', 'public');
+            $path = $request->file('image')->store('categories', 's3');
             $categoryData['image'] = $path;
         }
 
@@ -102,10 +102,10 @@ class CategoryController extends Controller
 
         if ($request->hasFile('image')) {
             // Delete old image if exists
-            if ($category->image && Storage::disk('public')->exists($category->image)) {
-                Storage::disk('public')->delete($category->image);
+            if ($category->image && Storage::disk('s3')->exists($category->image)) {
+                Storage::disk('s3')->delete($category->image);
             }
-            $path = $request->file('image')->store('categories', 'public');
+            $path = $request->file('image')->store('categories', 's3');
             $category->image = $path;
         }
 
@@ -142,7 +142,7 @@ class CategoryController extends Controller
         }
 
         if ($category->image) {
-            Storage::disk('public')->delete($category->image);
+            Storage::disk('s3')->delete($category->image);
         }
 
         $category->delete();

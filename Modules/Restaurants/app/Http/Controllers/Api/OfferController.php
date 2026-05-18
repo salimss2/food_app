@@ -132,7 +132,7 @@ class OfferController extends Controller
         if ($request->hasFile('image')) {
             $file = $request->file('image');
             $filename = time() . '_' . $file->getClientOriginalName();
-            $file->storeAs('restaurants/offers', $filename, 'public');
+            $file->storeAs('restaurants/offers', $filename, 's3');
             $offerData['image'] = 'restaurants/offers/' . $filename;
         }
 
@@ -214,12 +214,12 @@ class OfferController extends Controller
         if ($request->hasFile('image')) {
             // Delete old image if it exists
             if ($offer->image) {
-                Storage::disk('public')->delete($offer->image);
+                Storage::disk('s3')->delete($offer->image);
             }
 
             $file = $request->file('image');
             $filename = time() . '_' . $file->getClientOriginalName();
-            $file->storeAs('restaurants/offers', $filename, 'public');
+            $file->storeAs('restaurants/offers', $filename, 's3');
             $offerData['image'] = 'restaurants/offers/' . $filename;
         }
 
@@ -256,7 +256,7 @@ class OfferController extends Controller
         $offer = Offer::where('restaurant_id', $user->restaurant->id)->findOrFail($id);
 
         if ($offer->image) {
-            Storage::disk('public')->delete($offer->image);
+            Storage::disk('s3')->delete($offer->image);
         }
 
         $offer->delete();

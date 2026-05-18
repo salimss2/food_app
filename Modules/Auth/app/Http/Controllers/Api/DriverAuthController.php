@@ -68,11 +68,11 @@ class DriverAuthController extends Controller
             // حذف الصورة القديمة
             if ($profile->avatar_url) {
                 $oldPath = str_replace(asset('storage/'), '', $profile->avatar_url);
-                Storage::disk('public')->delete($oldPath);
+                Storage::disk('s3')->delete($oldPath);
             }
 
             // تخزين الصورة الجديدة
-            $path = $request->file('avatar')->store('avatars', 'public');
+            $path = $request->file('avatar')->store('avatars', 's3');
             $fullUrl = asset('storage/' . $path);
 
             // تحديث البروفايل
@@ -144,9 +144,9 @@ class DriverAuthController extends Controller
             if ($request->hasFile('avatar')) {
                 if ($profile->avatar_url) {
                     $oldPath = str_replace(asset('storage/'), '', $profile->avatar_url);
-                    Storage::disk('public')->delete($oldPath);
+                    Storage::disk('s3')->delete($oldPath);
                 }
-                $path = $request->file('avatar')->store('avatars', 'public');
+                $path = $request->file('avatar')->store('avatars', 's3');
                 $profile->avatar_url = asset('storage/' . $path);
             }
 

@@ -71,8 +71,8 @@ class MealController extends Controller
             $file = $request->file('image');
             $filename = time() . '_' . $file->getClientOriginalName();
 
-            // Store in the meals directory within the public disk
-            $file->storeAs('restaurants/meals', $filename, 'public');
+            // Store in the meals directory within the s3 disk
+            $file->storeAs('restaurants/meals', $filename, 's3');
 
             // Save the full path to the database
             $mealData['image'] = 'restaurants/meals/' . $filename;
@@ -115,14 +115,14 @@ class MealController extends Controller
         if ($request->hasFile('image')) {
             // Delete the old image if it exists
             if ($meal->image) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($meal->image);
+                \Illuminate\Support\Facades\Storage::disk('s3')->delete($meal->image);
             }
 
             $file = $request->file('image');
             $filename = time() . '_' . $file->getClientOriginalName();
 
             // Store the new image
-            $file->storeAs('restaurants/meals', $filename, 'public');
+            $file->storeAs('restaurants/meals', $filename, 's3');
 
             // Update the path in the database
             $mealData['image'] = 'restaurants/meals/' . $filename;
@@ -165,8 +165,8 @@ class MealController extends Controller
         $user = Auth::user();
         $meal = Meal::where('restaurant_id', $user->restaurant->id)->findOrFail($id);
 
-        if ($meal->image && Storage::disk('public')->exists($meal->image)) {
-            Storage::disk('public')->delete($meal->image);
+        if ($meal->image && Storage::disk('s3')->exists($meal->image)) {
+            Storage::disk('s3')->delete($meal->image);
         }
 
         $meal->delete();

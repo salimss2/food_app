@@ -177,13 +177,13 @@ class ProfileController extends Controller
         // Handle Logo Upload
         if ($request->hasFile('logo')) {
             // Delete old logo from storage
-            if ($restaurant->logo && Storage::disk('public')->exists($restaurant->logo)) {
-                Storage::disk('public')->delete($restaurant->logo);
+            if ($restaurant->logo && Storage::disk('s3')->exists($restaurant->logo)) {
+                Storage::disk('s3')->delete($restaurant->logo);
             }
 
             $file = $request->file('logo');
             $filename = time() . '_logo_' . $user->id . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('restaurants/logos', $filename, 'public');
+            $path = $file->storeAs('restaurants/logos', $filename, 's3');
             $restaurant->logo = $path;
         }
 
