@@ -1005,4 +1005,104 @@ class OrdersController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Add a review/rating for an order.
+     */
+    public function review(Request $request, $id)
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        // 1. Validate payload
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'meals_rating' => 'required|integer|min:1|max:5',
+            'driver_rating' => 'nullable|integer|min:1|max:5',
+            'restaurant_rating' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // 2. Fetch the order and ensure ownership & correct status
+        $order = Order::where('id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$order) {
+            return response()->json([
+                'status' => false,
+                'message' => 'الطلب غير موجود أو غير مصرح لك بتقييمه'
+            ], 404);
+        }
+
+        if (strtolower($order->status) !== 'delivered') {
+            return response()->json([
+                'status' => false,
+                'message' => 'يمكنك تقييم الطلبات فقط بعد اكتمال التوصيل (delivered)'
+            ], 422);
+        }
+
+        // 3. Prevent duplicate reviews
+        $exists = \Modules\Orders\Models\OrderReview::where('order_id', $order->id)->exists();
+        if ($exists) {
+            return response()->json([
+                'status' => false,
+                'message' => 'لقد قمت بتقييم هذا الطلب مسبقاً'
+            ], 422);
+        }
+
+        // 4. Save review inside a transaction and update aggregates
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($order, $request, $user) {
+            $review = \Modules\Orders\Models\OrderReview::create([
+                'order_id' => $order->id,
+                'user_id' => $user->id,
+                'restaurant_id' => $order->restaurant_id,
+                'driver_id' => $order->driver_id,
+                'meals_rating' => $request->meals_rating,
+                'driver_rating' => $order->driver_id ? $request->driver_rating : null,
+                'restaurant_rating' => $request->restaurant_rating,
+                'comment' => $request->comment,
+            ]);
+
+            // Dynamically calculate and update Restaurant average rating and count
+            $restaurantReviews = \Modules\Orders\Models\OrderReview::where('restaurant_id', $order->restaurant_id);
+            $restaurantRatingAvg = round($restaurantReviews->avg('restaurant_rating'), 2);
+            $restaurantRatingCount = $restaurantReviews->count();
+
+            $restaurant = \Modules\Restaurants\Models\Restaurant::find($order->restaurant_id);
+            if ($restaurant) {
+                $restaurant->update([
+                    'rating' => $restaurantRatingAvg,
+                    'rating_count' => $restaurantRatingCount,
+                ]);
+            }
+
+            // Dynamically calculate and update Driver average rating and count
+            if ($order->driver_id) {
+                $driverReviews = \Modules\Orders\Models\OrderReview::where('driver_id', $order->driver_id)
+                    ->whereNotNull('driver_rating');
+                $driverRatingAvg = round($driverReviews->avg('driver_rating'), 2);
+                $driverRatingCount = $driverReviews->count();
+
+                $driverProfile = \Modules\Auth\Models\DriverProfile::where('user_id', $order->driver_id)->first();
+                if ($driverProfile) {
+                    $driverProfile->update([
+                        'rating' => $driverRatingAvg,
+                        'rating_count' => $driverRatingCount,
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'تم حفظ التقييم بنجاح، شكراً لك!',
+                'data' => $review
+            ], 201);
+        });
+    }
 }

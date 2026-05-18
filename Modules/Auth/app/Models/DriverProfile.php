@@ -23,6 +23,8 @@ class DriverProfile extends Model
         'vehicle_model',
         'vehicle_plate',
         'vehicle_vin',
+        'rating',
+        'rating_count',
     ];
 
     // علاقة عكسية: هذا البروفايل يخص مستخدماً واحداً
@@ -30,5 +32,5 @@ class DriverProfile extends Model
     {
         return $this->belongsTo(User::class);
     }
-    
+
 }

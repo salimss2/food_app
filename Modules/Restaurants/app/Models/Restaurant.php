@@ -28,6 +28,8 @@ class Restaurant extends Model
         'account_status',
         'is_open',
         'commission_rate',
+        'rating',
+        'rating_count',
     ];
 
     protected $appends = ['is_open', 'logo_url', 'image_url'];
