@@ -11,6 +11,7 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
     // --- Customer order routes ---
     Route::get('orders/{id}/track', [OrdersController::class, 'track']);
     Route::apiResource('orders', OrdersController::class)->names('orders');
+    Route::post('coupons/apply', [\Modules\Orders\Http\Controllers\CouponController::class, 'apply']);
 
     // --- Cart routes ---
     Route::prefix('cart')->group(function () {

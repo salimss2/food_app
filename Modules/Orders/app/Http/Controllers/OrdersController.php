@@ -264,6 +264,7 @@ class OrdersController extends Controller
         $request->validate([
             'payment_method' => ['nullable', 'string'],
             'scheduled_at' => ['nullable', 'date'],
+            'coupon_code' => ['nullable', 'string'],
             'offer_id' => ['nullable', 'integer', 'exists:offers,id'],
             'quantity' => ['nullable', 'integer', 'min:1'],
             'items' => ['nullable', 'array', 'min:1'],
@@ -273,6 +274,36 @@ class OrdersController extends Controller
         ]);
 
         $scheduledAt = $request->input('scheduled_at');
+
+        // --- [إضافة جديدة] التحقق من كود الخصم والجدولة ---
+        $couponCode = $request->input('coupon_code');
+        $coupon = null;
+
+        if ($couponCode) {
+            if ($request->filled('scheduled_at')) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'عذراً، لا يمكن استخدام كود الخصم مع الطلبات المجدولة'
+                ], 422);
+            }
+
+            $coupon = \Modules\Orders\Models\Coupon::where('code', $couponCode)->first();
+
+            if (!$coupon || !$coupon->status) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'كود الخصم غير صحيح أو غير مفعل'
+                ], 422);
+            }
+
+            $today = \Carbon\Carbon::today();
+            if ($coupon->expires_at && $today->greaterThan(\Carbon\Carbon::parse($coupon->expires_at)->startOfDay())) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'عذراً، انتهت صلاحية هذا الكود'
+                ], 422);
+            }
+        }
 
         Log::info("Checkout request received", [
             'user_id' => $user->id,
@@ -603,9 +634,30 @@ class OrdersController extends Controller
         // =====================================================================
         // CASE B: طلب فوري (Immediate Order)
         // =====================================================================
+
+        // Calculate the overall cart subtotal across all restaurants/items
+        $cartSubtotal = 0.00;
+        foreach ($groupedItems as $restaurantId => $restaurantItems) {
+            $cartSubtotal += $restaurantItems->sum('subtotal');
+        }
+
+        $totalDiscount = 0.00;
+        if ($coupon) {
+            if ($coupon->type === 'percent') {
+                $totalDiscount = ($cartSubtotal * (float) $coupon->discount) / 100;
+            } elseif ($coupon->type === 'fixed') {
+                $totalDiscount = (float) $coupon->discount;
+            }
+
+            // Cap total discount at cart subtotal
+            if ($totalDiscount > $cartSubtotal) {
+                $totalDiscount = $cartSubtotal;
+            }
+        }
+
         $groupId = Str::uuid()->toString();
 
-        $createdOrders = DB::transaction(function () use ($user, $cart, $groupedItems, $paymentMethod, $groupId, $receiptPath, $latitude, $longitude) {
+        $createdOrders = DB::transaction(function () use ($user, $cart, $groupedItems, $paymentMethod, $groupId, $receiptPath, $latitude, $longitude, $coupon, $totalDiscount, $cartSubtotal) {
             $orders = [];
 
             foreach ($groupedItems as $restaurantId => $restaurantItems) {
@@ -670,6 +722,15 @@ class OrdersController extends Controller
                     Log::warning("Missing coordinates for distance calculation", ['restaurant' => $restaurantId]);
                 }
 
+                $orderDiscount = 0.00;
+                if ($totalDiscount > 0 && $cartSubtotal > 0) {
+                    // Proportionally distribute the discount
+                    $orderDiscount = ($restaurantTotal / $cartSubtotal) * $totalDiscount;
+                    $orderDiscount = round($orderDiscount, 2);
+                }
+
+                $finalTotal = max(0.00, $restaurantTotal - $orderDiscount);
+
                 // أ. إنشاء سجل الطلب الفرعي للمطعم
                 /** @var Order $order */
                 $order = Order::create([
@@ -679,8 +740,10 @@ class OrdersController extends Controller
                     'restaurant_id' => $restaurantId,
                     'driver_id' => null,
                     'payment_method' => $paymentMethod,
-                    'total' => $restaurantTotal,
-                    'total_price' => $restaurantTotal,
+                    'coupon_code' => $coupon ? $coupon->code : null,
+                    'discount_amount' => $orderDiscount,
+                    'total' => $finalTotal,
+                    'total_price' => $finalTotal,
                     'status' => $status,
                     'payment_status' => $paymentStatus,
                     'receipt_image' => $receiptPath,
