@@ -100,11 +100,24 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_complaints'
         ]);
 
-        // 5. تعريف أدوار تطبيقات الجوال (Flutter)
-        // نضعها في الجارد المخصص للـ API (مثلاً sanctum) لتجنب تداخل الجلسات
-        $appRoles = ['Customer', 'Driver', 'Restaurant Admin'];
+        // 5. تعريف أدوار تطبيقات الجوال والمطاعم (Flutter / Restaurant Owners)
+        // ننشئها لكلا الجاردين (web و sanctum) لتجنب أي تعارض في الصلاحيات أو الجلسات
+        $appRoles = [
+            'Customer',
+            'customer',
+            'Driver',
+            'driver',
+            'Restaurant Admin',
+            'restaurant admin',
+            'Restaurant Owner',
+            'restaurant owner'
+        ];
         foreach ($appRoles as $roleName) {
-            Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'sanctum']); // أو 'api' حسب حزمة التوثيق عندك
+            Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
+            Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'sanctum']);
         }
+
+        // 6. مسح الكاش فوراً لتطبيق التغييرات الجديدة
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
     }
 }

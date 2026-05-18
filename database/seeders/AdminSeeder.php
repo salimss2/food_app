@@ -20,26 +20,25 @@ class AdminSeeder extends Seeder
             [
                 'name' => 'Admin Test 1',
                 'email' => 'admin1@example.com',
-                'password' => bcrypt('12345678'),
             ],
             [
                 'name' => 'Admin Test 2',
                 'email' => 'admin2@example.com',
-                'password' => bcrypt('12345678'),
             ],
         ];
 
         foreach ($admins as $adminData) {
-
-            $user = User::firstOrCreate(
+            $user = User::updateOrCreate(
                 ['email' => $adminData['email']],
-                $adminData
+                [
+                    'name' => $adminData['name'],
+                    'password' => \Illuminate\Support\Facades\Hash::make('12345678'),
+                    'status' => 'active',
+                ]
             );
 
             // ربط الدور بالطريقة الصحيحة
-            if (!$user->hasRole('System Admin')) {
-                $user->assignRole('System Admin');
-            }
+            $user->assignRole('System Admin');
         }
     }
 }
