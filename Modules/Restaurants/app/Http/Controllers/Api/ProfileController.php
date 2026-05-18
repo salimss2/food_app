@@ -160,6 +160,7 @@ class ProfileController extends Controller
             'description' => 'nullable|string',
             'phone' => 'nullable|string|max:20',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:3072',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:3072',
         ]);
 
         if ($validator->fails()) {
@@ -174,16 +175,17 @@ class ProfileController extends Controller
         $restaurant->description = $request->description;
         $restaurant->phone = $request->phone;
 
-        // Handle Logo Upload
-        if ($request->hasFile('logo')) {
+        // Handle Logo / Image Upload
+        $file = $request->file('logo') ?? $request->file('image');
+        if ($file) {
+            $disk = config('filesystems.default') ?: 's3';
             // Delete old logo from storage
-            if ($restaurant->logo && Storage::disk('s3')->exists($restaurant->logo)) {
-                Storage::disk('s3')->delete($restaurant->logo);
+            if ($restaurant->logo && Storage::disk($disk)->exists($restaurant->logo)) {
+                Storage::disk($disk)->delete($restaurant->logo);
             }
 
-            $file = $request->file('logo');
             $filename = time() . '_logo_' . $user->id . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('restaurants/logos', $filename, 's3');
+            $path = $file->storeAs('restaurants/logos', $filename, $disk);
             $restaurant->logo = $path;
         }
 

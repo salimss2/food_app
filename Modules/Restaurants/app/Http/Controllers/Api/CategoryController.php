@@ -45,7 +45,8 @@ class CategoryController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:3072',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:3072',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:3072',
         ]);
 
         if ($validator->fails()) {
@@ -53,13 +54,20 @@ class CategoryController extends Controller
             return response()->json(['status' => false, 'errors' => $validator->errors()], 422);
         }
 
+        if (!$request->hasFile('image') && !$request->hasFile('logo')) {
+            ob_clean();
+            return response()->json(['status' => false, 'message' => 'The image or logo field is required.'], 422);
+        }
+
         $categoryData = [
             'restaurant_id' => $user->restaurant->id,
             'name' => $request->name,
         ];
 
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('categories', 's3');
+        $file = $request->file('image') ?? $request->file('logo');
+        if ($file) {
+            $disk = config('filesystems.default') ?: 's3';
+            $path = $file->store('categories', $disk);
             $categoryData['image'] = $path;
         }
 
@@ -91,6 +99,7 @@ class CategoryController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:3072',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:3072',
         ]);
 
         if ($validator->fails()) {
@@ -100,12 +109,14 @@ class CategoryController extends Controller
 
         $category->name = $request->name;
 
-        if ($request->hasFile('image')) {
+        $file = $request->file('image') ?? $request->file('logo');
+        if ($file) {
+            $disk = config('filesystems.default') ?: 's3';
             // Delete old image if exists
-            if ($category->image && Storage::disk('s3')->exists($category->image)) {
-                Storage::disk('s3')->delete($category->image);
+            if ($category->image && Storage::disk($disk)->exists($category->image)) {
+                Storage::disk($disk)->delete($category->image);
             }
-            $path = $request->file('image')->store('categories', 's3');
+            $path = $file->store('categories', $disk);
             $category->image = $path;
         }
 
@@ -142,7 +153,8 @@ class CategoryController extends Controller
         }
 
         if ($category->image) {
-            Storage::disk('s3')->delete($category->image);
+            $disk = config('filesystems.default') ?: 's3';
+            Storage::disk($disk)->delete($category->image);
         }
 
         $category->delete();

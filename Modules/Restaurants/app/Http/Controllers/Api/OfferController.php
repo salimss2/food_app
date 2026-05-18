@@ -109,7 +109,8 @@ class OfferController extends Controller
             'combo_price' => 'required|numeric|min:0',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'meals' => 'required|array',
             'meals.*.meal_id' => 'required|exists:meals,id',
             'meals.*.quantity' => 'required|integer|min:1',
@@ -129,10 +130,11 @@ class OfferController extends Controller
             'restaurant_id' => $user->restaurant->id,
         ];
 
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
+        $file = $request->file('image') ?? $request->file('logo');
+        if ($file) {
+            $disk = config('filesystems.default') ?: 's3';
             $filename = time() . '_' . $file->getClientOriginalName();
-            $file->storeAs('restaurants/offers', $filename, 's3');
+            $file->storeAs('restaurants/offers', $filename, $disk);
             $offerData['image'] = 'restaurants/offers/' . $filename;
         }
 
@@ -198,7 +200,8 @@ class OfferController extends Controller
             'combo_price' => 'required|numeric|min:0',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'meals' => 'required|array',
             'meals.*.meal_id' => 'required|exists:meals,id',
             'meals.*.quantity' => 'required|integer|min:1',
@@ -211,15 +214,16 @@ class OfferController extends Controller
 
         $offerData = $request->only(['title', 'description', 'combo_price', 'start_date', 'end_date']);
 
-        if ($request->hasFile('image')) {
+        $file = $request->file('image') ?? $request->file('logo');
+        if ($file) {
+            $disk = config('filesystems.default') ?: 's3';
             // Delete old image if it exists
             if ($offer->image) {
-                Storage::disk('s3')->delete($offer->image);
+                Storage::disk($disk)->delete($offer->image);
             }
 
-            $file = $request->file('image');
             $filename = time() . '_' . $file->getClientOriginalName();
-            $file->storeAs('restaurants/offers', $filename, 's3');
+            $file->storeAs('restaurants/offers', $filename, $disk);
             $offerData['image'] = 'restaurants/offers/' . $filename;
         }
 
@@ -256,7 +260,8 @@ class OfferController extends Controller
         $offer = Offer::where('restaurant_id', $user->restaurant->id)->findOrFail($id);
 
         if ($offer->image) {
-            Storage::disk('s3')->delete($offer->image);
+            $disk = config('filesystems.default') ?: 's3';
+            Storage::disk($disk)->delete($offer->image);
         }
 
         $offer->delete();
