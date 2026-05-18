@@ -11,18 +11,20 @@ return new class extends Migration {
     public function up(): void
     {
         // 1. Create order_reviews table
-        Schema::create('order_reviews', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('order_id')->unique()->constrained('orders')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('restaurant_id')->constrained('restaurants')->onDelete('cascade');
-            $table->foreignId('driver_id')->nullable()->constrained('users')->onDelete('cascade');
-            $table->integer('meals_rating');
-            $table->integer('driver_rating')->nullable();
-            $table->integer('restaurant_rating');
-            $table->text('comment')->nullable();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('order_reviews')) {
+            Schema::create('order_reviews', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('order_id')->unique()->constrained('orders')->onDelete('cascade');
+                $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+                $table->foreignId('restaurant_id')->constrained('restaurants')->onDelete('cascade');
+                $table->foreignId('driver_id')->nullable()->constrained('users')->onDelete('cascade');
+                $table->integer('meals_rating');
+                $table->integer('driver_rating')->nullable();
+                $table->integer('restaurant_rating');
+                $table->text('comment')->nullable();
+                $table->timestamps();
+            });
+        }
 
         // 2. Add rating and rating_count to restaurants table
         if (Schema::hasTable('restaurants')) {
