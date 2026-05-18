@@ -33,6 +33,7 @@ Route::post('/delivery/calculate-fee', [\App\Http\Controllers\Api\DeliveryCalcul
 
 Route::prefix('v1')->group(function () {
     Route::post('/discount/apply', [DiscountController::class, 'apply']);
+    Route::post('/coupons/apply', [\Modules\Orders\Http\Controllers\CouponController::class, 'apply']);
     Route::get('/search', [SearchController::class, 'search']);
     Route::get('/privacy-policy', [SettingController::class, 'getPrivacyPolicy']);
     Route::get('/about-app', [SettingController::class, 'getAboutAppData']);
