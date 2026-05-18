@@ -9,6 +9,7 @@ use Modules\Delivery\Http\Controllers\Api\DriverOrderController;
 Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
 
     // --- Customer order routes ---
+    Route::get('orders/{id}/track', [OrdersController::class, 'track']);
     Route::apiResource('orders', OrdersController::class)->names('orders');
 
     // --- Cart routes ---
@@ -25,6 +26,7 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
     // Show: GET  /api/v1/restaurant/orders/{id}
     // Upd:  PATCH /api/v1/restaurant/orders/{id}/status
     Route::prefix('restaurant')->group(function () {
+        Route::get('scheduled-orders', [RestaurantOrderController::class, 'getRestaurantScheduledOrders']);
         Route::get('orders/scheduled', [RestaurantOrderController::class, 'getScheduledOrders']);
         // Route::get('orders', [RestaurantOrderController::class, 'index']); // Commented out to avoid conflict
         Route::get('orders', [OrdersController::class, 'restaurantOrders']); // New method in OrdersController

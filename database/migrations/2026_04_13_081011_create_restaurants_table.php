@@ -11,17 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('restaurants', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('logo')->nullable();
-            $table->text('description')->nullable();
-            $table->string('address')->nullable();
-            $table->string('phone')->nullable();
-            $table->string('status')->default('active');
-            $table->decimal('rating', 3, 2)->default(0.00);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('restaurants')) {
+            Schema::create('restaurants', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->string('logo')->nullable();
+                $table->text('description')->nullable();
+                $table->string('address')->nullable();
+                $table->string('phone')->nullable();
+                $table->string('status')->default('active');
+                $table->decimal('rating', 3, 2)->default(0.00);
+                $table->timestamps();
+            });
+        }
     }
 
     /**

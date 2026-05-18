@@ -24,17 +24,43 @@ class Meal extends Model
         'description',
         'image',
         'available',
+        'discount_type',
+        'discount_value',
+        'discount_start',
+        'discount_end',
     ];
 
     protected $casts = [
         'available' => 'boolean',
+        'discount_start' => 'datetime',
+        'discount_end' => 'datetime',
     ];
 
-    protected $appends = ['image_url'];
+    protected $appends = ['image_url', 'price_after_discount'];
 
     public function getImageUrlAttribute()
     {
         return $this->image ? asset('storage/' . $this->image) : asset('assets/default-meal.png');
+    }
+
+    public function getPriceAfterDiscountAttribute()
+    {
+        $now = now();
+        $hasActiveDiscount = $this->discount_type &&
+            $this->discount_value !== null &&
+            ($this->discount_start === null || $now >= $this->discount_start) &&
+            ($this->discount_end === null || $now <= $this->discount_end);
+
+        if ($hasActiveDiscount) {
+            if ($this->discount_type === 'percentage') {
+                $discountAmount = ($this->price * $this->discount_value) / 100;
+                return max(0, (float) ($this->price - $discountAmount));
+            } elseif ($this->discount_type === 'fixed') {
+                return max(0, (float) ($this->price - $this->discount_value));
+            }
+        }
+
+        return (float) $this->price;
     }
 
     public function restaurant(): BelongsTo
@@ -45,5 +71,12 @@ class Meal extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(MealCategory::class, 'meal_category_id');
+    }
+
+    public function offers(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Offer::class, 'meal_offer')
+            ->withPivot('quantity')
+            ->withTimestamps();
     }
 }

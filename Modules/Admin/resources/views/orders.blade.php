@@ -506,7 +506,7 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                <button type="button" onclick="submitCustomReassign()"
+                                <button type="button" onclick="submitCustomReassign(this)"
                                     class="w-full flex justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">{{ __('Confirm Assignment') }}</button>
                             </div>
                         </form>
@@ -593,14 +593,49 @@
             document.getElementById('reassignModal').classList.add('hidden');
         }
 
-        function submitCustomReassign() {
+        async function submitCustomReassign(submitBtn) {
             const drv = document.getElementById('reassignModalDriverSelect').value;
+            const form = document.getElementById('executeReassignForm');
+
             if (!drv) {
                 alert('Please select a driver first.');
                 return;
             }
-            document.getElementById('hiddenDriverIdInput').value = drv;
-            document.getElementById('executeReassignForm').submit();
+
+            // Disable button and show loading state
+            const originalText = submitBtn.innerText;
+            submitBtn.disabled = true;
+            submitBtn.innerText = '{{ __("Processing...") }}';
+
+            const formData = new FormData(form);
+            formData.set('driver_id', drv);
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    // Success: Reload the page to show the updated assignment
+                    window.location.reload();
+                } else {
+                    const result = await response.json();
+                    // Display the Arabic error message from the backend
+                    alert(result.message || '{{ __("An unexpected error occurred") }}');
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = originalText;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('{{ __("Connection error. Please try again.") }}');
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalText;
+            }
         }
 
         // ── Live Search: debounce customer name input 500ms ──

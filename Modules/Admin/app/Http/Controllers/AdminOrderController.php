@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Modules\Orders\Events\OrderBroadcasted;
+use Illuminate\Support\Facades\DB;
 
 class AdminOrderController extends Controller
 {
@@ -61,7 +62,7 @@ class AdminOrderController extends Controller
 
         // Fleet availability
         $fleetAvailableCount = User::role('Driver')
-            ->whereHas('availability', function($q) {
+            ->whereHas('availability', function ($q) {
                 $q->where('is_online', 1);
             })->count();
 
@@ -83,7 +84,7 @@ class AdminOrderController extends Controller
             ->get();
 
         // Group by Date for better UI organization
-        $groupedOrders = $orders->groupBy(function($order) {
+        $groupedOrders = $orders->groupBy(function ($order) {
             return Carbon::parse($order->scheduled_at)->format('Y-m-d');
         });
 
@@ -114,14 +115,14 @@ class AdminOrderController extends Controller
         if ($request->filled('customer_name')) {
             $query->whereHas('user', function ($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->customer_name . '%')
-                  ->orWhere('phone', 'like', '%' . $request->customer_name . '%');
+                    ->orWhere('phone', 'like', '%' . $request->customer_name . '%');
             });
         }
 
         $orders = $query->latest()->paginate(20)->withQueryString();
 
         $restaurants = \Modules\Restaurants\Models\Restaurant::all();
-        $drivers     = User::role('Driver')->get();
+        $drivers = User::role('Driver')->get();
 
         return view('admin::order-history', compact('orders', 'restaurants', 'drivers'));
     }
@@ -132,7 +133,7 @@ class AdminOrderController extends Controller
     public function forceCancel(Request $request, $id)
     {
         $order = Order::findOrFail($id);
-        
+
         $reason = $request->input('cancellation_reason', 'Canceled by Administrator');
 
         $order->status = 'canceled';
@@ -161,21 +162,64 @@ class AdminOrderController extends Controller
             'driver_id' => 'required|exists:users,id'
         ]);
 
-        // Ensure user is driver
-        $driver = User::role('Driver')->findOrFail($request->driver_id);
+        // Ensure user is driver and load availability
+        $driver = User::role('Driver')->with('availability')->findOrFail($request->driver_id);
 
-        $order = Order::findOrFail($id);
-        $order->driver_id = $driver->id;
-
-        // Smart State Transition: auto-assign when a driver is manually assigned by admin
-        if ($order->status === 'pending_driver_acceptance') {
-            $order->status = 'driver_assigned';
+        // 1. Availability Check (The Guard)
+        $availability = $driver->availability;
+        if (!$availability || !$availability->is_online || $availability->availability !== 'idle') {
+            return response()->json([
+                'status' => false,
+                'message' => 'الموصل مشغول الان أو غير متصل'
+            ], 422);
         }
 
-        $order->save();
+        $order = Order::findOrFail($id);
 
-        return redirect()->back()->with('success', 'Order #' . $order->id . ' driver reassigned to ' . $driver->name . '.');
+        try {
+            DB::beginTransaction();
+
+            // 2. State Management (Atomic Update)
+            $order->driver_id = $driver->id;
+
+            // Smart State Transition
+            if ($order->status === 'pending_driver_acceptance') {
+                $order->status = 'driver_assigned';
+            }
+            $order->save();
+
+            // Set driver to busy
+            $availability->update(['availability' => 'busy']);
+
+            DB::commit();
+
+            // 3. Existing Notifications (FCM + Broadcast)
+            try {
+                // Real-time Broadcast
+                event(new \Modules\Orders\Events\OrderAssignedToDriver($order, $driver->id));
+
+                // FCM Push Notification
+                if ($driver->fcm_token) {
+                    app(\App\Services\FcmService::class)->sendNotification(
+                        $driver->fcm_token,
+                        "تم تعيين طلب جديد لك! 🚚",
+                        "لقد تم تعيينك لهذا الطلب من قبل الإدارة. يرجى التوجه للاستلام.",
+                        ['type' => 'assigned_order', 'order_id' => (string) $order->id]
+                    );
+                }
+            } catch (\Exception $e) {
+                \Log::error("Manual Assignment Notification failed: " . $e->getMessage());
+            }
+
+            return redirect()->back()->with('success', 'Order #' . $order->id . ' driver reassigned to ' . $driver->name . '.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error("Manual Assignment Transaction failed: " . $e->getMessage());
+            return redirect()->back()->with('error', 'فشلت عملية التعيين: ' . $e->getMessage());
+        }
     }
+
 
     /**
      * Approve Bank Transfer Payment

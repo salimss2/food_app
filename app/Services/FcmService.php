@@ -14,7 +14,7 @@ class FcmService
     public function __construct()
     {
         $this->credentialsPath = storage_path('app/firebase-credentials.json');
-        
+
         // Try to get project_id from JSON first, fallback to config
         if (file_exists($this->credentialsPath)) {
             $creds = json_decode(file_get_contents($this->credentialsPath), true);
@@ -40,11 +40,11 @@ class FcmService
 
             $header = base64UrlEncode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
             $payload = base64UrlEncode(json_encode([
-                'iss'   => $credentials['client_email'],
+                'iss' => $credentials['client_email'],
                 'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
-                'aud'   => 'https://oauth2.googleapis.com/token',
-                'exp'   => $now + 3600,
-                'iat'   => $now,
+                'aud' => 'https://oauth2.googleapis.com/token',
+                'exp' => $now + 3600,
+                'iat' => $now,
             ]));
 
             $signature = '';
@@ -55,7 +55,7 @@ class FcmService
 
             $response = Http::withoutVerifying()->asForm()->post('https://oauth2.googleapis.com/token', [
                 'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-                'assertion'  => $jwt,
+                'assertion' => $jwt,
             ]);
 
             if ($response->failed()) {
@@ -73,12 +73,13 @@ class FcmService
     public function sendNotification($deviceToken, $title, $body, $dataPayload = [])
     {
         $accessToken = $this->getAccessToken();
-        if (!$accessToken) return false;
+        if (!$accessToken)
+            return false;
 
         $url = "https://fcm.googleapis.com/v1/projects/{$this->projectId}/messages:send";
 
         // FCM v1 requires all data values to be strings
-        $formattedData = array_map(fn($val) => (string)$val, $dataPayload);
+        $formattedData = array_map(fn($val) => (string) $val, $dataPayload);
 
         $payload = [
             'message' => [
@@ -101,6 +102,20 @@ class FcmService
         }
 
         return true;
+    }
+
+    /**
+     * Send notifications to multiple devices.
+     */
+    public function sendToMultipleDevices(array $deviceTokens, $title, $body, $dataPayload = [])
+    {
+        $successCount = 0;
+        foreach ($deviceTokens as $token) {
+            if ($this->sendNotification($token, $title, $body, $dataPayload)) {
+                $successCount++;
+            }
+        }
+        return $successCount;
     }
 }
 

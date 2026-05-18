@@ -15,7 +15,7 @@ class CartController extends Controller
         $user = $request->user();
         $cart = Cart::firstOrCreate(['user_id' => $user->id]);
 
-        $items = CartItem::with(['meal.restaurant'])
+        $items = CartItem::with(['meal.restaurant', 'offer.restaurant'])
             ->where('cart_id', $cart->id)
             ->get();
 
@@ -30,41 +30,110 @@ class CartController extends Controller
     public function add(Request $request)
     {
         $request->validate([
-            'meal_id' => 'required|integer',
-            'quantity' => 'required|integer|min:1',
-            'price' => 'nullable|numeric'
+            'meal_id' => 'nullable|required_without:offer_id|exists:meals,id',
+            'offer_id' => 'nullable|required_without:meal_id|exists:offers,id',
+            'quantity' => 'required|integer|min:1'
         ]);
 
         $user = $request->user();
-
         $cart = Cart::firstOrCreate(['user_id' => $user->id]);
 
-        $price = $request->input('price', 1500);
-        $quantity = $request->input('quantity');
-        $subtotal = $price * $quantity;
+        $quantity = (int) $request->input('quantity');
+        $price = 0.00;
 
-        /** @var CartItem|null $cartItem */
-        $cartItem = CartItem::where('cart_id', $cart->id)
-            ->where('meal_id', $request->meal_id)
-            ->first();
+        if ($request->filled('offer_id')) {
+            $now = now();
+            $offer = \Modules\Restaurants\Models\Offer::where('id', $request->offer_id)
+                ->where(function ($query) use ($now) {
+                    $query->whereNull('start_date')->orWhere('start_date', '<=', $now);
+                })
+                ->where(function ($query) use ($now) {
+                    $query->whereNull('end_date')->orWhere('end_date', '>=', $now);
+                })
+                ->first();
 
-        if ($cartItem) {
-            $cartItem->quantity += $quantity;
-            $cartItem->subtotal += $subtotal;
-            $cartItem->save();
+            if (!$offer) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'العرض غير متوفر أو منتهي الصلاحية'
+                ], 422);
+            }
+
+            $price = (float) $offer->combo_price;
+
+            /** @var CartItem|null $cartItem */
+            $cartItem = CartItem::where('cart_id', $cart->id)
+                ->where('offer_id', $offer->id)
+                ->first();
+
+            $subtotal = $price * $quantity;
+
+            if ($cartItem) {
+                $cartItem->quantity += $quantity;
+                $cartItem->subtotal += $subtotal;
+                $cartItem->save();
+            } else {
+                CartItem::create([
+                    'cart_id' => $cart->id,
+                    'meal_id' => null,
+                    'offer_id' => $offer->id,
+                    'quantity' => $quantity,
+                    'subtotal' => $subtotal
+                ]);
+            }
         } else {
-            CartItem::create([
-                'cart_id' => $cart->id,
-                'meal_id' => $request->meal_id,
-                'quantity' => $quantity,
-                'subtotal' => $subtotal
-            ]);
+            $meal = \Modules\Restaurants\Models\Meal::find($request->meal_id);
+            if (!$meal) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'الوجبة غير متوفرة'
+                ], 422);
+            }
+
+            $now = now();
+            $hasActiveDiscount = $meal->discount_type &&
+                $meal->discount_value !== null &&
+                ($meal->discount_start === null || $now >= $meal->discount_start) &&
+                ($meal->discount_end === null || $now <= $meal->discount_end);
+
+            $price = (float) $meal->price;
+
+            if ($hasActiveDiscount) {
+                if ($meal->discount_type === 'percentage') {
+                    $discountAmount = ($meal->price * $meal->discount_value) / 100;
+                    $price = max(0, (float) ($meal->price - $discountAmount));
+                } elseif ($meal->discount_type === 'fixed') {
+                    $price = max(0, (float) ($meal->price - $meal->discount_value));
+                }
+            }
+
+            /** @var CartItem|null $cartItem */
+            $cartItem = CartItem::where('cart_id', $cart->id)
+                ->where('meal_id', $meal->id)
+                ->first();
+
+            $subtotal = $price * $quantity;
+
+            if ($cartItem) {
+                $cartItem->quantity += $quantity;
+                $cartItem->subtotal += $subtotal;
+                $cartItem->save();
+            } else {
+                CartItem::create([
+                    'cart_id' => $cart->id,
+                    'meal_id' => $meal->id,
+                    'offer_id' => null,
+                    'quantity' => $quantity,
+                    'subtotal' => $subtotal
+                ]);
+            }
         }
 
         $cart->total = CartItem::where('cart_id', $cart->id)->sum('subtotal');
         $cart->save();
 
         return response()->json([
+            'status' => true,
             'message' => 'تمت الإضافة للسلة بنجاح! 🛒',
             'cart_total' => $cart->total
         ], 200);

@@ -17,6 +17,10 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id',
         'meal_id',
+        'offer_id',
+        'type',
+        'combo_meals',
+        'name',
         'quantity',
         'price',
         'subtotal',
@@ -26,6 +30,7 @@ class OrderItem extends Model
 
     protected $casts = [
         'customizations' => 'array',
+        'combo_meals' => 'array',
     ];
 
     /**
@@ -44,8 +49,11 @@ class OrderItem extends Model
         return $this->belongsTo(Meal::class);
     }
 
-    // protected static function newFactory(): OrderItemFactory
-    // {
-    //     // return OrderItemFactory::new();
-    // }
+    /**
+     * العلاقة: عنصر الطلب ينتمي لعرض كومبو واحد.
+     */
+    public function offer()
+    {
+        return $this->belongsTo(\Modules\Restaurants\Models\Offer::class);
+    }
 }

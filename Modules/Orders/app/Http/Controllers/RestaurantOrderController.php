@@ -113,6 +113,39 @@ class RestaurantOrderController extends Controller
     }
 
     /**
+     * GET /api/v1/restaurant/scheduled-orders
+     *
+     * Fetch all scheduled orders from the new scheduled_orders table with status 'scheduled'.
+     *
+     * @return JsonResponse
+     */
+    public function getRestaurantScheduledOrders(): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!$user->restaurant) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No restaurant associated with this account.',
+            ], 404);
+        }
+
+        $orders = \Modules\Scheduling\Models\ScheduledOrder::with(['user'])
+            ->where('restaurant_id', $user->restaurant->id)
+            ->where('status', 'scheduled')
+            ->orderBy('scheduled_at', 'asc')
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'success' => true,
+            'data' => $orders,
+            'orders' => $orders,
+        ]);
+    }
+
+
+    /**
      * GET /api/v1/restaurant/orders/{id}
      *
      * Returns full details for a single order, ensuring it belongs

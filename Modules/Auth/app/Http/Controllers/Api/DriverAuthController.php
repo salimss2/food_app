@@ -16,9 +16,12 @@ class DriverAuthController extends Controller
     // --- 1. تسجيل الدخول ---
     public function login(Request $request)
     {
+        \Illuminate\Support\Facades\Log::info('Driver Login Payload:', $request->all());
+
         $request->validate([
             'phone' => 'required',
             'password' => 'required',
+            'fcm_token' => 'nullable|string',
         ]);
 
         // البحث في جدول users وجلب بيانات البروفايل معه
@@ -32,16 +35,16 @@ class DriverAuthController extends Controller
             ], 401);
         }
 
-        // 🔥 (اختياري) بما أنك تستخدم Spatie، يمكنك التحقق أن المستخدم لديه صلاحية موصل
-        // if (!$user->hasRole('driver')) {
-        //     return response()->json(['status' => false, 'message' => 'هذا الحساب ليس مسجلاً كموصل'], 403);
-        // }
+        // Update FCM token if provided
+        if ($request->has('fcm_token')) {
+            $user->update(['fcm_token' => $request->fcm_token]);
+        }
 
         $token = $user->createToken('DriverToken')->plainTextToken;
 
         return response()->json([
             'token' => $token,
-            'user' => $user // سيشمل الـ User وبداخله الـ driverProfile بفضل with()
+            'user' => $user->load('driverProfile') // Ensure profile is fresh
         ], 200);
     }
 
@@ -78,14 +81,38 @@ class DriverAuthController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'تم تحديث الصورة بنجاح ✅',
-                'avatar_url' => $fullUrl 
+                'avatar_url' => $fullUrl
             ]);
         }
 
         return response()->json(['status' => false, 'message' => 'لم يتم إرسال ملف'], 400);
     }
 
-    // --- 3. تحديث الملف الشخصي ---
+    // --- 3. جلب الملف الشخصي (Flat JSON structure for Flutter) ---
+    public function getProfile(Request $request)
+    {
+        $user = clone $request->user();
+        $profile = $user->driverProfile;
+
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'id_number' => $profile->id_number ?? null,
+                'address' => $profile->address ?? null,
+                'avatar_url' => $profile->avatar_url ?? null,
+                'vehicle_model' => $profile->vehicle_model ?? null,
+                'vehicle_plate' => $profile->vehicle_plate ?? null,
+                'vehicle_vin' => $profile->vehicle_vin ?? null,
+                'latitude' => $profile->latitude ?? null,
+                'longitude' => $profile->longitude ?? null,
+            ]
+        ], 200);
+    }
+
+    // --- 4. تحديث الملف الشخصي ---
     public function updateProfile(Request $request)
     {
         $user = $request->user();
@@ -149,7 +176,7 @@ class DriverAuthController extends Controller
 
         $validator = Validator::make($request->all(), [
             'vehicle_model' => 'required|string',
-            'plate_number' => 'required|string', 
+            'plate_number' => 'required|string',
             'vehicle_vin' => 'nullable|string',
         ]);
 

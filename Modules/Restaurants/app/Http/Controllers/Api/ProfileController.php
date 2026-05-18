@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Modules\Restaurants\Http\Resources\RestaurantResource;
+use Modules\Restaurants\Http\Requests\UpdateRestaurantLocationRequest;
 
 /**
  * ProfileController
@@ -192,6 +193,48 @@ class ProfileController extends Controller
             'status' => true,
             'message' => 'Restaurant information updated successfully.',
             'data' => new RestaurantResource($restaurant->fresh()),
+        ]);
+    }
+
+    /**
+     * POST /api/v1/restaurant/update-location
+     *
+     * Updates the authenticated owner's restaurant geographical coordinates.
+     *
+     * @param  UpdateRestaurantLocationRequest  $request
+     * @return JsonResponse
+     */
+    public function updateLocation(UpdateRestaurantLocationRequest $request): JsonResponse
+    {
+        $user = Auth::user();
+        $restaurant = $user->restaurant;
+
+        if (!$restaurant) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No restaurant associated with this account.',
+            ], 404);
+        }
+
+        $restaurant->update([
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+        ]);
+
+        Log::info("Restaurant location updated", [
+            'owner_id' => $user->id,
+            'restaurant_id' => $restaurant->id,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Restaurant location updated successfully.',
+            'data' => [
+                'latitude' => (float) $restaurant->latitude,
+                'longitude' => (float) $restaurant->longitude,
+            ],
         ]);
     }
 }

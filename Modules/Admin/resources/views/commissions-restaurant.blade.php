@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Restaurant Commissions - Admin Dashboard</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -28,6 +29,8 @@
     <link rel="stylesheet" href="{{ asset('modules/admin/css/app.css') }}">
     <!-- Cairo Font (Arabic RTL) -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         html[dir="rtl"] body {
             font-family: 'Cairo', sans-serif !important;
@@ -63,17 +66,16 @@
             right: auto !important;
             left: 0 !important;
         }
+
+        .hidden-el {
+            display: none !important;
+        }
     </style>
 </head>
 
 <body class="bg-gray-50 text-gray-800 font-sans antialiased overflow-hidden flex h-screen">
 
     @include('admin::layouts.partials.sidebar')
-
-
-
-
-
 
     <!-- Layout Wrapper -->
     <div class="flex-1 flex flex-col min-w-0 transition-all duration-300">
@@ -107,21 +109,36 @@
 
             <div class="p-4 sm:p-6 lg:p-8">
 
-                <div class="mb-6 flex justify-between items-center">
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-900">Vendor Summaries</h2>
-                        <p class="text-sm text-gray-500 mt-1">Review generated gross revenue and internal cuts.</p>
-                    </div>
-                    <select id="periodFilter"
-                        class="block rounded-lg border-gray-300 py-2 pl-3 pr-10 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary shadow-sm bg-white">
-                        <option value="This Month">This Month</option>
-                        <option value="Last Month">Last Month</option>
-                        <option value="All Time">All Time</option>
-                    </select>
+                <!-- Header Title -->
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">Vendor Summaries & Settlements</h2>
+                    <p class="text-sm text-gray-500 mt-1">Review generated gross revenue, system commission rate, cuts,
+                        and settle accounts.</p>
                 </div>
 
-                <!-- List Card -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <!-- Dynamic Tab Toggles and Search -->
+                <div
+                    class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-200 pb-4 gap-4">
+                    <div class="flex space-x-2">
+                        <button id="tabActiveBalances" onclick="switchTab('wallets')"
+                            class="px-4 py-2 text-sm font-bold border-b-2 border-primary text-primary transition-all focus:outline-none">
+                            Active Balances (الحسابات النشطة)
+                        </button>
+                        <button id="tabSettlementHistory" onclick="switchTab('archive')"
+                            class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-all focus:outline-none">
+                            Settlement History (سجل التسويات)
+                        </button>
+                    </div>
+                    <!-- Search bar -->
+                    <div id="searchWrapper" class="relative rounded-md shadow-sm w-full sm:w-64">
+                        <input type="text" id="restaurantSearch"
+                            class="block w-full rounded-md border-gray-300 pr-10 focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                            placeholder="بحث عن مطعم... (Search Restaurant)">
+                    </div>
+                </div>
+
+                <!-- 1. Active Wallets Container -->
+                <div id="walletsContainer" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     <div class="overflow-x-auto w-full">
                         <table class="w-full whitespace-nowrap text-left text-sm text-gray-500">
                             <thead
@@ -139,14 +156,46 @@
                                 </tr>
                             </thead>
                             <tbody id="restTableBody" class="divide-y divide-gray-200 bg-white">
-                                <!-- Populated by JS -->
+                                <!-- Populated dynamically by JS -->
                             </tbody>
                         </table>
                     </div>
                     <!-- Empty State -->
-                    <div id="emptyState"
+                    <div id="walletsEmptyState"
                         class="hidden-el p-12 flex flex-col items-center justify-center text-center border-t border-gray-200">
-                        <h3 class="text-lg font-medium text-gray-900 mt-2">No data found</h3>
+                        <h3 class="text-lg font-medium text-gray-900 mt-2">No active balances found</h3>
+                    </div>
+                </div>
+
+                <!-- 2. Settlement Archive Container -->
+                <div id="archiveContainer"
+                    class="hidden-el bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto w-full">
+                        <table class="w-full whitespace-nowrap text-left text-sm text-gray-500">
+                            <thead
+                                class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b border-gray-200">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Receipt No</th>
+                                    <th scope="col" class="px-6 py-3">Date</th>
+                                    <th scope="col" class="px-6 py-3">Restaurant Name</th>
+                                    <th scope="col" class="px-6 py-3 text-right">Gross Revenue</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-red-600 bg-red-50/30">System Cut
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-right text-green-600 bg-green-50/30">Net
+                                        Payable</th>
+                                    <th scope="col" class="px-6 py-3 text-center">Settled By</th>
+                                    <th scope="col" class="px-6 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="archiveTableBody" class="divide-y divide-gray-200 bg-white">
+                                <!-- Populated dynamically by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Empty State -->
+                    <div id="archiveEmptyState"
+                        class="hidden-el p-12 flex flex-col items-center justify-center text-center border-t border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900 mt-2">No settlement records found</h3>
                     </div>
                 </div>
 
@@ -154,10 +203,11 @@
         </main>
     </div>
 
-    <!-- Breakdown Modal -->
+    <!-- Breakdown Modal (Active Balance orders list) -->
     <div id="breakdownModal" class="relative z-40 hidden-el" aria-labelledby="modal-title" role="dialog"
         aria-modal="true">
-        <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity modal-overlay"></div>
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity modal-overlay"
+            onclick="document.getElementById('breakdownModal').classList.add('hidden-el')"></div>
         <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
             <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
                 <div
@@ -175,43 +225,75 @@
 
                     <div class="px-6 py-5">
                         <div class="flex justify-between items-center mb-4">
-                            <span class="text-sm font-medium text-gray-500">Showing recent 5 orders for selected
-                                period.</span>
-                            <button class="text-primary text-sm font-bold hover:underline">Export CSV</button>
+                            <span class="text-sm font-medium text-gray-500">Delivered, unsettled orders (True food
+                                subtotal cost).</span>
+                            <button id="btnExportBreakdownCSV"
+                                class="text-primary text-sm font-bold hover:underline">Export CSV</button>
                         </div>
-                        <div class="border border-gray-200 rounded-md overflow-hidden">
+                        <div class="border border-gray-200 rounded-md overflow-hidden max-h-96 overflow-y-auto">
                             <table class="w-full text-left text-sm text-gray-500">
-                                <thead class="bg-gray-50 text-gray-700 uppercase text-xs">
+                                <thead class="bg-gray-50 text-gray-700 uppercase text-xs sticky top-0">
                                     <tr>
                                         <th class="px-4 py-2">Order ID</th>
                                         <th class="px-4 py-2">Date</th>
+                                        <th class="px-4 py-2">Payment Method</th>
                                         <th class="px-4 py-2 text-right">Order Total</th>
-                                        <th class="px-4 py-2 text-right">Fee (15%)</th>
-                                        <th class="px-4 py-2 text-right">Vendor Net</th>
+                                        <th class="px-4 py-2 text-right text-red-600 bg-red-50/20">System Cut</th>
+                                        <th class="px-4 py-2 text-right text-green-600 bg-green-50/20">Vendor Net</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-100" id="mockOrderBreakdown">
+                                <tbody class="divide-y divide-gray-100" id="breakdownTableBody">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Details Modal (Past settled orders list) -->
+    <div id="receiptModal" class="relative z-40 hidden-el" aria-labelledby="modal-title" role="dialog"
+        aria-modal="true">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity modal-overlay"
+            onclick="document.getElementById('receiptModal').classList.add('hidden-el')"></div>
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div
+                    class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-3xl modal-content">
+                    <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-gray-900" id="receiptTitle">Settlement Receipt Details</h3>
+                        <button onclick="document.getElementById('receiptModal').classList.add('hidden-el')"
+                            class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                            <span class="sr-only">Close</span>
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="px-6 py-5">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-sm font-medium text-gray-500" id="receiptSub">Orders included in this
+                                settlement.</span>
+                            <button id="btnExportReceiptCSV"
+                                class="text-primary text-sm font-bold hover:underline">Export CSV</button>
+                        </div>
+                        <div class="border border-gray-200 rounded-md overflow-hidden max-h-96 overflow-y-auto">
+                            <table class="w-full text-left text-sm text-gray-500">
+                                <thead class="bg-gray-50 text-gray-700 uppercase text-xs sticky top-0">
                                     <tr>
-                                        <td class="px-4 py-2 font-medium">#ORD-9801</td>
-                                        <td class="px-4 py-2">Today, 12:30 PM</td>
-                                        <td class="px-4 py-2 text-right font-bold text-gray-900">$45.00</td>
-                                        <td class="px-4 py-2 text-right text-red-600">-$6.75</td>
-                                        <td class="px-4 py-2 text-right text-green-600 font-bold">$38.25</td>
+                                        <th class="px-4 py-2">Order ID</th>
+                                        <th class="px-4 py-2">Date</th>
+                                        <th class="px-4 py-2">Payment Method</th>
+                                        <th class="px-4 py-2 text-right">Order Total</th>
+                                        <th class="px-4 py-2 text-right text-red-600 bg-red-50/20">System Cut</th>
+                                        <th class="px-4 py-2 text-right text-green-600 bg-green-50/20">Vendor Net</th>
                                     </tr>
-                                    <tr>
-                                        <td class="px-4 py-2 font-medium">#ORD-9788</td>
-                                        <td class="px-4 py-2">Yesterday, 19:40 PM</td>
-                                        <td class="px-4 py-2 text-right font-bold text-gray-900">$120.00</td>
-                                        <td class="px-4 py-2 text-right text-red-600">-$18.00</td>
-                                        <td class="px-4 py-2 text-right text-green-600 font-bold">$102.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="px-4 py-2 font-medium">#ORD-9772</td>
-                                        <td class="px-4 py-2">Yesterday, 15:10 PM</td>
-                                        <td class="px-4 py-2 text-right font-bold text-gray-900">$20.00</td>
-                                        <td class="px-4 py-2 text-right text-red-600">-$3.00</td>
-                                        <td class="px-4 py-2 text-right text-green-600 font-bold">$17.00</td>
-                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100" id="receiptTableBody">
+                                    <!-- Populated by JS -->
                                 </tbody>
                             </table>
                         </div>

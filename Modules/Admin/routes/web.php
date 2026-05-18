@@ -12,6 +12,9 @@ use Modules\Admin\Http\Controllers\AdminPaymentController;
 use Modules\Admin\Http\Controllers\AdminCommissionController;
 use Modules\Admin\Http\Controllers\AdminComplaintController;
 use Modules\Admin\Http\Controllers\AdminRoleController;
+use Modules\Admin\Http\Controllers\AdminNotificationController;
+use Modules\Admin\Http\Controllers\AdminNotificationInboxController;
+use Modules\Admin\Http\Controllers\FinancialReportController;
 
 
 // Route::get('/admin/login', [AuthController::class, 'showLoginForm'])->name('admin.login');
@@ -90,6 +93,17 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/commissions', [\Modules\Admin\Http\Controllers\AdminCommissionController::class, 'index'])->name('admin.commissions.index')->middleware('permission:view_financials');
     Route::post('/commissions/{id}/settle', [\Modules\Admin\Http\Controllers\AdminCommissionController::class, 'settle'])->name('admin.commissions.settle')->middleware('permission:manage_commissions');
     Route::get('/api/driver-wallets', [\Modules\Admin\Http\Controllers\AdminCommissionController::class, 'getDriverWalletSummaries'])->name('admin.api.driver-wallets')->middleware('permission:view_financials');
+    Route::get('/api/driver-wallets/{driverId}/deliveries', [\Modules\Admin\Http\Controllers\AdminCommissionController::class, 'getDriverDeliveries'])->name('admin.api.driver-wallets.deliveries')->middleware('permission:view_financials');
+    Route::post('/api/driver-wallets/{driverId}/settle', [\Modules\Admin\Http\Controllers\AdminCommissionController::class, 'settleDriverBalance'])->name('admin.api.driver-wallets.settle')->middleware('permission:manage_commissions');
+    Route::get('/api/settlements', [\Modules\Admin\Http\Controllers\AdminCommissionController::class, 'getSettlementHistory'])->name('admin.api.settlements.history')->middleware('permission:view_financials');
+    Route::get('/api/settlements/{settlementId}/details', [\Modules\Admin\Http\Controllers\AdminCommissionController::class, 'getSettlementDetails'])->name('admin.api.settlements.details')->middleware('permission:view_financials');
+
+    // Restaurant Commissions Routes
+    Route::get('/api/restaurant-wallets', [\Modules\Admin\Http\Controllers\AdminCommissionController::class, 'getRestaurantWallets'])->name('admin.api.restaurant-wallets');
+    Route::get('/api/restaurant-wallets/{restaurantId}/orders', [\Modules\Admin\Http\Controllers\AdminCommissionController::class, 'getRestaurantOrders'])->name('admin.api.restaurant-wallets.orders');
+    Route::post('/api/restaurant-wallets/{restaurantId}/settle', [\Modules\Admin\Http\Controllers\AdminCommissionController::class, 'settleRestaurantBalance'])->name('admin.api.restaurant-wallets.settle');
+    Route::get('/api/restaurant-settlements', [\Modules\Admin\Http\Controllers\AdminCommissionController::class, 'getRestaurantSettlementHistory'])->name('admin.api.restaurant-settlements.history');
+    Route::get('/api/restaurant-settlements/{settlementId}/details', [\Modules\Admin\Http\Controllers\AdminCommissionController::class, 'getRestaurantSettlementDetails'])->name('admin.api.restaurant-settlements.details');
 
     // Complaints (New Placeholder Routes)
     Route::get('/complaints', [\Modules\Admin\Http\Controllers\AdminComplaintController::class, 'index'])->name('admin.complaints.index')->middleware('permission:view_complaints');
@@ -115,6 +129,21 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
     // Profile Management (Accessible to ALL authenticated admins)
     Route::get('/profile', [\Modules\Admin\Http\Controllers\AdminProfileController::class, 'index'])->name('admin.profile');
     Route::put('/profile', [\Modules\Admin\Http\Controllers\AdminProfileController::class, 'updateProfile'])->name('admin.profile.update');
+
+    // Financial Reports
+    Route::get('/reports', [FinancialReportController::class, 'index'])->name('admin.reports')->middleware('permission:view_financials');
+    Route::get('/reports/export/csv', [FinancialReportController::class, 'exportCsv'])->name('admin.reports.export.csv')->middleware('permission:view_financials');
+    Route::get('/reports/export/pdf', [FinancialReportController::class, 'exportPdf'])->name('admin.reports.export.pdf')->middleware('permission:view_financials');
+
+    // Discount Codes
+    Route::get('/discount-codes', [\Modules\Admin\Http\Controllers\DiscountCodeController::class, 'index'])->name('admin.discount-codes.index');
+    Route::post('/discount-codes', [\Modules\Admin\Http\Controllers\DiscountCodeController::class, 'store'])->name('admin.discount-codes.store');
+    Route::delete('/discount-codes/{id}', [\Modules\Admin\Http\Controllers\DiscountCodeController::class, 'destroy'])->name('admin.discount-codes.destroy');
+
+    // Promotional Offers
+    Route::get('/offers', [\Modules\Admin\Http\Controllers\AdminOfferController::class, 'index'])->name('admin.offers.index')->middleware('permission:manage_settings');
+    Route::post('/offers', [\Modules\Admin\Http\Controllers\AdminOfferController::class, 'store'])->name('admin.offers.store')->middleware('permission:manage_settings');
+    Route::delete('/offers/{id}', [\Modules\Admin\Http\Controllers\AdminOfferController::class, 'destroy'])->name('admin.offers.destroy')->middleware('permission:manage_settings');
 });
 
 // Integrated Dummy Routes (Temporary Fallbacks to prevent crashes)
@@ -122,9 +151,6 @@ Route::prefix('admin')->group(function () {
     Route::get('/forgot-password', function () {
         return view('admin::forgot-password');
     })->name('admin.forgot-password');
-    Route::get('/reports', function () {
-        return view('admin::reports');
-    })->name('admin.reports.index');
     Route::get('/welcome', function () {
         return view('admin::welcome');
     })->name('admin.welcome');
@@ -134,18 +160,12 @@ Route::prefix('admin')->group(function () {
     Route::get('/commissions-driver', function () {
         return view('admin::commissions-driver');
     })->name('admin.commissions-driver.index');
-    Route::get('/offers', function () {
-        return view('admin::offers');
-    })->name('admin.offers.index');
     Route::get('/driver-details', function () {
         return view('admin::driver-details');
     })->name('admin.driver-details.index');
-    Route::get('/notifications', function () {
-        return view('admin::notifications');
-    })->name('admin.notifications.index');
-    Route::get('/notification-history', function () {
-        return view('admin::notification-history');
-    })->name('admin.notification-history.index');
+    Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('admin.notifications.index');
+    Route::post('/notifications', [AdminNotificationController::class, 'store'])->name('admin.notifications.store');
+    Route::get('/notification-history', [AdminNotificationController::class, 'history'])->name('admin.notification-history.index');
     Route::get('/restaurant-details', function () {
         return view('admin::restaurant-details');
     })->name('admin.restaurant-details.index');
@@ -167,9 +187,16 @@ Route::prefix('admin')->group(function () {
     Route::get('/revenue', function () {
         return view('admin::revenue');
     })->name('admin.revenue.index');
-    Route::get('/scheduled-notifications', function () {
-        return view('admin::scheduled-notifications');
-    })->name('admin.scheduled-notifications.index');
+
+    // Notifications Management
+    Route::get('/scheduled-notifications', [AdminNotificationController::class, 'scheduled'])->name('admin.scheduled-notifications.index');
+    Route::delete('/notifications/{id}', [AdminNotificationController::class, 'destroy'])->name('admin.notifications.destroy');
+
+    // System Alerts / Notification Inbox
+    Route::get('/notifications/inbox', [AdminNotificationInboxController::class, 'index'])->name('admin.notifications.inbox');
+    Route::get('/notifications/inbox/mark-all-read', [AdminNotificationInboxController::class, 'markAllAsRead'])->name('admin.notifications.inbox.mark-all-read');
+    Route::get('/notifications/inbox/{id}/read', [AdminNotificationInboxController::class, 'readAndRedirect'])->name('admin.notifications.inbox.read');
+    // Commissions Restaurant
     Route::get('/commissions-restaurant', function () {
         return view('admin::commissions-restaurant');
     })->name('admin.commissions-restaurant.index');

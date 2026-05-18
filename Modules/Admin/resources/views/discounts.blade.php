@@ -85,6 +85,37 @@
                 </div>
             </div>
 
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center">
+                    <div class="p-3 rounded-full bg-indigo-50 text-indigo-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 uppercase">Active Codes</p>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ number_format($activeCodesCount) }}</h3>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center">
+                    <div class="p-3 rounded-full bg-green-50 text-green-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 uppercase">Total Redemptions</p>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ number_format($totalRedemptions) }}</h3>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-50 text-yellow-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 uppercase">Total Codes</p>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ number_format($totalCodesCount) }}</h3>
+                    </div>
+                </div>
+            </div>
+
             <!-- List Card -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="overflow-x-auto w-full">
@@ -100,15 +131,61 @@
                             </tr>
                         </thead>
                         <tbody id="discountsTableBody" class="divide-y divide-gray-200 bg-white">
-                            <!-- Populated by JS -->
+                            @forelse($discountCodes as $code)
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-indigo-100 text-indigo-700 font-bold rounded-lg border border-indigo-200">
+                                                {{ $code->discount_type === 'percentage' ? '%' : '$' }}
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-bold text-gray-900 tracking-wide">{{ $code->code }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="text-sm font-bold text-gray-900">
+                                            {{ $code->discount_type === 'percentage' ? number_format($code->discount_value, 0) . '%' : '$' . number_format($code->discount_value, 2) }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-xs text-gray-500">Min Order: <span class="font-medium text-gray-900">${{ number_format($code->min_order_amount, 2) }}</span></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-xs text-gray-500"><span class="font-medium text-gray-900">{{ $code->used_count }}</span> / {{ $code->max_usages }}</div>
+                                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                                            <div class="bg-primary h-1.5 rounded-full" style="width: {{ $code->max_usages > 0 ? min(($code->used_count / $code->max_usages) * 100, 100) : 0 }}%"></div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ \Carbon\Carbon::parse($code->expiry_date)->isPast() ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800' }}">
+                                            {{ \Carbon\Carbon::parse($code->expiry_date)->format('M d, Y') }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <form action="{{ route('admin.discount-codes.destroy', $code->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this discount code?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-red-500 hover:text-red-700 mx-2 transition-colors">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="px-6 py-12 text-center">
+                                        <h3 class="text-lg font-medium text-gray-900 mt-2">No discount codes found</h3>
+                                    </td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Empty State -->
-                <div id="emptyState" class="hidden-el p-12 flex flex-col items-center justify-center text-center border-t border-gray-200">
-                    <h3 class="text-lg font-medium text-gray-900 mt-2">No discount codes found</h3>
-                </div>
+                @if(isset($discountCodes) && $discountCodes->hasPages())
+                    <div class="px-6 py-4 border-t border-gray-200 bg-white">
+                        {{ $discountCodes->links() }}
+                    </div>
+                @endif
             </div>
         </main>
     </div>
@@ -127,33 +204,33 @@
                         </button>
                     </div>
                     
-                    <form id="discountForm" onsubmit="handleDiscountSubmit(event)">
-                        <input type="hidden" id="discountId">
+                    <form id="discountForm" action="{{ route('admin.discount-codes.store') }}" method="POST">
+                        @csrf
                         <div class="px-6 py-5 space-y-4">
                             
                             <!-- Basic details -->
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label for="codeTitleInput" class="block text-sm font-medium text-gray-700">Code (Alphanumeric)</label>
-                                    <input type="text" id="codeTitleInput" required style="text-transform:uppercase" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-10 px-3 border" placeholder="WELCOME20">
+                                    <input type="text" name="code" id="codeTitleInput" required style="text-transform:uppercase" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-10 px-3 border" placeholder="WELCOME20">
                                 </div>
                                 <div>
                                     <label for="expiryInput" class="block text-sm font-medium text-gray-700">Expiry Date</label>
-                                    <input type="date" id="expiryInput" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-10 px-3 border">
+                                    <input type="date" name="expiry_date" id="expiryInput" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-10 px-3 border">
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label for="typeInput" class="block text-sm font-medium text-gray-700">Discount Type</label>
-                                    <select id="typeInput" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-10 px-3 border bg-white">
-                                        <option value="Percentage">Percentage (%)</option>
-                                        <option value="Fixed">Fixed Amount ($)</option>
+                                    <select name="discount_type" id="typeInput" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-10 px-3 border bg-white">
+                                        <option value="percentage">Percentage (%)</option>
+                                        <option value="fixed">Fixed Amount ($)</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label for="valueInput" class="block text-sm font-medium text-gray-700">Discount Value</label>
-                                    <input type="number" id="valueInput" required min="1" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-10 px-3 border" placeholder="20">
+                                    <input type="number" name="discount_value" id="valueInput" required min="0" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-10 px-3 border" placeholder="20">
                                 </div>
                             </div>
 
@@ -165,11 +242,11 @@
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
                                         <label for="minOrderInput" class="block text-sm font-medium text-gray-700">Min. Order Amount ($)</label>
-                                        <input type="number" id="minOrderInput" required min="0" step="0.5" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-10 px-3 border" placeholder="15.00">
+                                        <input type="number" name="min_order_amount" id="minOrderInput" min="0" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-10 px-3 border" placeholder="15.00">
                                     </div>
                                     <div>
                                         <label for="limitInput" class="block text-sm font-medium text-gray-700">Max Usages (Global)</label>
-                                        <input type="number" id="limitInput" required min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-10 px-3 border" placeholder="100">
+                                        <input type="number" name="max_usages" id="limitInput" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-10 px-3 border" placeholder="100">
                                     </div>
                                 </div>
                             </div>

@@ -26,7 +26,8 @@ class Restaurant extends Model
         'description',
         'phone',
         'account_status',
-        'is_open'
+        'is_open',
+        'commission_rate',
     ];
 
     protected $appends = ['is_open', 'logo_url'];
@@ -85,4 +86,8 @@ class Restaurant extends Model
         return $this->hasMany(MealCategory::class, 'restaurant_id');
     }
 
+    public function orders()
+    {
+        return $this->hasMany(\Modules\Orders\Models\Order::class, 'restaurant_id');
+    }
 }

@@ -70,10 +70,10 @@ class MealController extends Controller
         if ($request->hasFile('image')) {
             $file = $request->file('image');
             $filename = time() . '_' . $file->getClientOriginalName();
-            
+
             // Store in the meals directory within the public disk
             $file->storeAs('restaurants/meals', $filename, 'public');
-            
+
             // Save the full path to the database
             $mealData['image'] = 'restaurants/meals/' . $filename;
         }
@@ -117,13 +117,13 @@ class MealController extends Controller
             if ($meal->image) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($meal->image);
             }
-            
+
             $file = $request->file('image');
             $filename = time() . '_' . $file->getClientOriginalName();
-            
+
             // Store the new image
             $file->storeAs('restaurants/meals', $filename, 'public');
-            
+
             // Update the path in the database
             $mealData['image'] = 'restaurants/meals/' . $filename;
         }
@@ -153,7 +153,7 @@ class MealController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Availability updated',
-            'available' => (bool)$meal->available,
+            'available' => (bool) $meal->available,
         ]);
     }
 
@@ -175,6 +175,46 @@ class MealController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Meal deleted successfully',
+        ]);
+    }
+
+    /**
+     * Set/update individual meal discount.
+     */
+    public function updateDiscount(Request $request, $mealId)
+    {
+        $user = Auth::user();
+        if (!$user->restaurant) {
+            ob_clean();
+            return response()->json(['status' => false, 'message' => 'No restaurant found'], 404);
+        }
+
+        $meal = Meal::where('restaurant_id', $user->restaurant->id)->findOrFail($mealId);
+
+        $validator = Validator::make($request->all(), [
+            'discount_type' => 'nullable|in:percentage,fixed',
+            'discount_value' => 'nullable|numeric|min:0',
+            'discount_start' => 'nullable|date',
+            'discount_end' => 'nullable|date|after_or_equal:discount_start',
+        ]);
+
+        if ($validator->fails()) {
+            ob_clean();
+            return response()->json(['status' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $meal->update([
+            'discount_type' => $request->discount_type,
+            'discount_value' => $request->discount_value,
+            'discount_start' => $request->discount_start,
+            'discount_end' => $request->discount_end,
+        ]);
+
+        ob_clean();
+        return response()->json([
+            'status' => true,
+            'message' => 'Meal discount updated successfully',
+            'data' => new MealResource($meal->load('category')),
         ]);
     }
 }

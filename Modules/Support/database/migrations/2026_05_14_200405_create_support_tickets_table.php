@@ -11,15 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('support_tickets', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
-            $table->string('type'); // complaint or inquiry
-            $table->string('subject');
-            $table->text('details');
-            $table->string('status')->default('pending');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('support_tickets')) {
+            Schema::create('support_tickets', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
+                $table->string('type'); // complaint or inquiry
+                $table->string('subject');
+                $table->text('details');
+                $table->string('status')->default('pending');
+                $table->timestamps();
+            });
+        }
     }
 
     /**

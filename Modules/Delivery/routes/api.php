@@ -34,6 +34,10 @@ Route::middleware('auth:sanctum')->prefix('v1/users/driver')->group(function () 
     Route::get('/profile-status', [DriverStatusController::class, 'getProfile']);
 });
 
+Route::middleware('auth:sanctum')->prefix('v1/driver')->group(function () {
+    Route::post('/update-live-location', [DriverStatusController::class, 'updateLiveLocation']);
+});
+
 // 2. مسارات الاختبار (بدون توكن لفتحها في المتصفح والتأكد من الاتصال)
 // هذه المسارات هي التي ستحل لك مشكلة الـ 404 في المتصفح حالياً
 Route::prefix('v1/users/driver')->group(function () {

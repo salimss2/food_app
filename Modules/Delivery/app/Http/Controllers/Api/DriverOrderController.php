@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Modules\Orders\Models\Order;
+use Modules\Orders\Http\Resources\OrderResource;
 use Modules\Delivery\Models\DeliveryTask;
 use Carbon\Carbon;
 use Modules\Delivery\Services\OrderEarningService; // 1. تم تعديل اسم الـ Service هنا
@@ -23,7 +24,7 @@ class DriverOrderController extends Controller
 
     public function getAvailableOrders()
     {
-        $orders = Order::with(['user', 'restaurant', 'items.meal', 'payment'])
+        $orders = Order::with(['user.profile', 'restaurant', 'items.meal', 'payment'])
             ->where('status', 'pending_driver_acceptance')
             ->whereDoesntHave('deliveryTask') // تأكيد عدم وجود سائق لهذا الطلب (driver_id == null)
             ->orderBy('created_at', 'desc')
@@ -34,13 +35,13 @@ class DriverOrderController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => $orders
+            'data' => OrderResource::collection($orders)
         ]);
     }
 
     public function getOrderDetails($id)
     {
-        $order = Order::with(['user', 'restaurant', 'items.meal', 'items.options.mealOption', 'payment'])
+        $order = Order::with(['user.profile', 'restaurant', 'items.meal', 'payment'])
             ->findOrFail($id);
 
         // 5. استخدام الدالة الجديدة
@@ -48,7 +49,7 @@ class DriverOrderController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => $order
+            'data' => new OrderResource($order)
         ]);
     }
 
@@ -178,14 +179,19 @@ class DriverOrderController extends Controller
     {
         $history = DeliveryTask::where('driver_id', Auth::id())
             ->where('status', 'delivered')
-            ->with(['order.user', 'order.restaurant', 'order.payment'])
+            ->whereHas('order', function ($query) {
+                $query->whereNull('settlement_id');
+            })
+            ->with(['order.user.profile', 'order.restaurant', 'order.payment'])
             ->orderBy('delivery_time', 'desc')
             ->get();
 
         // 6. استخدام الدالة الجديدة داخل الـ Loop
         $history->transform(function ($task) {
             if ($task->order) {
+                // Ensure earning is mapped to the model before wrapping in Resource
                 $task->order = $this->earningService->mapOrdersWithEarning($task->order);
+                $task->order = new OrderResource($task->order);
             }
             return $task;
         });

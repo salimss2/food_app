@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Modules\Delivery\Models\DriverStatus;
 use App\Models\User;
+use Modules\Delivery\Http\Requests\UpdateLiveLocationRequest;
+use Modules\Auth\Models\DriverProfile;
+use Modules\Delivery\Events\DriverLocationUpdated;
 
 class DriverStatusController extends Controller
 {
@@ -14,7 +17,7 @@ class DriverStatusController extends Controller
         // 1. التحقق من البيانات المرسلة من Flutter
         $request->validate([
             'is_online' => 'required|boolean',
-            'user_id'   => 'nullable|integer'
+            'user_id' => 'nullable|integer'
         ]);
 
         try {
@@ -27,11 +30,11 @@ class DriverStatusController extends Controller
 
             if (!$user) {
                 // نفضل استخدام auth()->id() لتجنب جلب كائن المستخدم كاملاً إذا لم نكن نحتاجه
-                $user = $request->user(); 
-                
+                $user = $request->user();
+
                 // في بيئة الإنتاج الحقيقية، لا يفضل إنشاء مستخدم عشوائي هنا إذا فشل تسجيل الدخول
-                if(!$user) {
-                     return response()->json([
+                if (!$user) {
+                    return response()->json([
                         'status' => false,
                         'message' => 'غير مصرح لك بإجراء هذا التعديل. الرجاء تسجيل الدخول.'
                     ], 401);
@@ -68,7 +71,7 @@ class DriverStatusController extends Controller
                 'data' => [
                     'id' => $user->id,
                     'name' => $user->name,
-                    'is_online' => (bool)$status->is_online,
+                    'is_online' => (bool) $status->is_online,
                     'availability' => $status->availability
                 ]
             ]);
@@ -102,9 +105,9 @@ class DriverStatusController extends Controller
                 'data' => [
                     'id' => $user->id,
                     'name' => $user->name,
-                    'is_online' => $status ? (bool)$status->is_online : false,
+                    'is_online' => $status ? (bool) $status->is_online : false,
                     // قمت بإضافة هذه الخطوة تحسباً إذا كان فلاتر يحتاج قراءة الـ availability أيضاً
-                    'availability' => $status ? $status->availability : 'idle' 
+                    'availability' => $status ? $status->availability : 'idle'
                 ]
             ]);
         } catch (\Exception $e) {
@@ -113,5 +116,43 @@ class DriverStatusController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Update live coordinates of the authenticated driver.
+     */
+    public function updateLiveLocation(UpdateLiveLocationRequest $request)
+    {
+        $profile = DriverProfile::where('user_id', auth()->id())->first();
+
+        if (!$profile) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Driver profile not found.'
+            ], 404);
+        }
+
+        $profile->update([
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+        ]);
+
+        // Find active orders for this driver to broadcast the live GPS location
+        $activeOrders = \Modules\Orders\Models\Order::where('driver_id', auth()->id())
+            ->whereNotIn('status', ['delivered', 'completed', 'cancelled', 'returned'])
+            ->get();
+
+        foreach ($activeOrders as $order) {
+            event(new DriverLocationUpdated(
+                $order->id,
+                (float) $request->latitude,
+                (float) $request->longitude
+            ));
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Location updated'
+        ]);
     }
 }

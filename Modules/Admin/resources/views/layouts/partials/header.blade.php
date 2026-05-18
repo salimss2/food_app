@@ -26,15 +26,71 @@
 
         <!-- Right Nav Items -->
         <div class="flex items-center space-x-4">
-            <a href="{{ route('admin.notifications.index') }}"
-                class="relative p-2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
-                <span class="absolute top-1.5 right-1.5 block w-2 h-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
-                    </path>
-                </svg>
-            </a>
+            <!-- Notification Dropdown -->
+            <div class="relative inline-block text-left" id="notificationsDropdownWrapper">
+                @php
+                    $unreadCount = auth()->check() ? auth()->user()->unreadNotifications->count() : 0;
+                    $latestNotifications = auth()->check() ? auth()->user()->unreadNotifications()->latest()->take(5)->get() : collect();
+                @endphp
+                <button id="notificationsDropdownBtn"
+                    class="relative p-2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
+                    @if($unreadCount > 0)
+                        <span class="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+                            {{ $unreadCount }}
+                        </span>
+                    @endif
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+                        </path>
+                    </svg>
+                </button>
+                <div id="notificationsDropdownMenu"
+                    class="hidden-el absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl ring-1 ring-black ring-opacity-5 py-1 z-30">
+                    <div class="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
+                        <span class="font-semibold text-xs text-gray-800">{{ __('System Alerts') }}</span>
+                        @if($unreadCount > 0)
+                            <a href="{{ route('admin.notifications.inbox.mark-all-read') }}" class="text-[10px] text-indigo-600 hover:text-indigo-800 font-medium">{{ __('Mark all as read') }}</a>
+                        @endif
+                    </div>
+                    <div class="max-h-64 overflow-y-auto divide-y divide-gray-50">
+                        @forelse($latestNotifications as $notif)
+                            @php
+                                $notifData = $notif->data ?? [];
+                                $source = $notifData['source'] ?? 'System';
+                                $title = $notifData['title'] ?? 'Alert';
+                                $body = $notifData['body'] ?? '';
+                            @endphp
+                            <a href="{{ route('admin.notifications.inbox.read', $notif->id) }}" class="block px-4 py-3 hover:bg-gray-50 transition-colors">
+                                <div class="flex justify-between items-start mb-1 gap-2">
+                                    <span class="font-semibold text-[11px] text-gray-900 truncate max-w-[150px]">{{ $title }}</span>
+                                    <span class="text-[9px] text-gray-400 whitespace-nowrap">{{ $notif->created_at->diffForHumans() }}</span>
+                                </div>
+                                <p class="text-[11px] text-gray-500 line-clamp-2 leading-relaxed">{{ $body }}</p>
+                                <div class="mt-1">
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold 
+                                        @if($source === 'Customer') bg-green-50 text-green-700
+                                        @elseif($source === 'Driver') bg-blue-50 text-blue-700
+                                        @elseif($source === 'Restaurant') bg-orange-50 text-orange-700
+                                        @else bg-gray-50 text-gray-700
+                                        @endif">
+                                        {{ __($source) }}
+                                    </span>
+                                </div>
+                            </a>
+                        @empty
+                            <div class="px-4 py-6 text-center text-xs text-gray-400">
+                                {{ __('No new alerts') }}
+                            </div>
+                        @endforelse
+                    </div>
+                    <div class="border-t border-gray-100">
+                        <a href="{{ route('admin.notifications.inbox') }}" class="block text-center py-2 text-xs text-indigo-600 hover:text-indigo-800 font-semibold bg-gray-50 hover:bg-gray-100 rounded-b-lg">
+                            {{ __('View All Alerts') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
 
             <!-- ── Language Switcher ── -->
             <div class="relative" id="langSwitcherWrapper">
@@ -112,6 +168,56 @@
         btn.addEventListener('click', function (e) {
             e.stopPropagation();
             const isOpen = !menu.classList.contains('hidden-el');
+            // Close other dropdowns
+            document.getElementById('notificationsDropdownMenu')?.classList.add('hidden-el');
+            document.getElementById('profileDropdownMenu')?.classList.add('hidden-el');
+            
+            menu.classList.toggle('hidden-el', isOpen);
+            btn.setAttribute('aria-expanded', String(!isOpen));
+        });
+
+        document.addEventListener('click', function () {
+            menu.classList.add('hidden-el');
+            btn.setAttribute('aria-expanded', 'false');
+        });
+    })();
+
+    // Notifications Dropdown Toggle
+    (function () {
+        const btn = document.getElementById('notificationsDropdownBtn');
+        const menu = document.getElementById('notificationsDropdownMenu');
+        if (!btn || !menu) return;
+
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const isOpen = !menu.classList.contains('hidden-el');
+            // Close other dropdowns
+            document.getElementById('langDropdownMenu')?.classList.add('hidden-el');
+            document.getElementById('profileDropdownMenu')?.classList.add('hidden-el');
+            
+            menu.classList.toggle('hidden-el', isOpen);
+            btn.setAttribute('aria-expanded', String(!isOpen));
+        });
+
+        document.addEventListener('click', function () {
+            menu.classList.add('hidden-el');
+            btn.setAttribute('aria-expanded', 'false');
+        });
+    })();
+
+    // Profile Dropdown Toggle
+    (function () {
+        const btn = document.getElementById('profileDropdownBtn');
+        const menu = document.getElementById('profileDropdownMenu');
+        if (!btn || !menu) return;
+
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const isOpen = !menu.classList.contains('hidden-el');
+            // Close other dropdowns
+            document.getElementById('langDropdownMenu')?.classList.add('hidden-el');
+            document.getElementById('notificationsDropdownMenu')?.classList.add('hidden-el');
+            
             menu.classList.toggle('hidden-el', isOpen);
             btn.setAttribute('aria-expanded', String(!isOpen));
         });

@@ -5,6 +5,7 @@ use Modules\Users\Http\Controllers\FavoriteController;
 use Modules\Auth\Http\Controllers\AuthController;
 use Modules\Notifications\Http\Controllers\NotificationController;
 use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\SearchController;
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -30,6 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::post('/delivery/calculate-fee', [\App\Http\Controllers\Api\DeliveryCalculationController::class, 'calculate']);
 
 Route::prefix('v1')->group(function () {
+    Route::get('/search', [SearchController::class, 'search']);
     Route::get('/privacy-policy', [SettingController::class, 'getPrivacyPolicy']);
     Route::get('/about-app', [SettingController::class, 'getAboutAppData']);
 });

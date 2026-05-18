@@ -38,7 +38,25 @@ class Order extends Model
         'platform_commission',
         'delivery_lat',
         'delivery_lng',
+        'settlement_id',
+        'restaurant_settlement_id',
     ];
+
+    /**
+     * العلاقة: الطلب ينتمي لتسوية مالية واحدة.
+     */
+    public function settlement()
+    {
+        return $this->belongsTo(Settlement::class, 'settlement_id');
+    }
+
+    /**
+     * Relationship: Order belongs to a restaurant settlement.
+     */
+    public function restaurantSettlement()
+    {
+        return $this->belongsTo(RestaurantSettlement::class, 'restaurant_settlement_id');
+    }
 
     /**
      * العلاقة: طلب واحد يحتوي على عدة عناصر.
