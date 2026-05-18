@@ -20,11 +20,18 @@ class MealCategory extends Model
         'image',
     ];
 
-    protected $appends = ['image_url'];
+    protected $appends = ['image_url', 'image_full_url'];
 
     public function getImageUrlAttribute()
     {
         return $this->image ? asset('storage/' . $this->image) : asset('assets/default-category.png');
+    }
+
+    protected function imageFullUrl(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: fn() => $this->image ? \Illuminate\Support\Facades\Storage::disk('s3')->url($this->image) : null,
+        );
     }
 
     public function restaurant(): BelongsTo

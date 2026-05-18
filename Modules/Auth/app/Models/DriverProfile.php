@@ -27,6 +27,29 @@ class DriverProfile extends Model
         'rating_count',
     ];
 
+    protected $appends = ['avatar_full_url'];
+
+    protected function avatarFullUrl(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: function () {
+                if (!$this->avatar_url) {
+                    return null;
+                }
+                $storageBase = asset('storage/');
+                if (str_starts_with($this->avatar_url, $storageBase)) {
+                    $path = str_replace($storageBase, '', $this->avatar_url);
+                    $path = ltrim($path, '/');
+                    return \Illuminate\Support\Facades\Storage::disk('s3')->url($path);
+                }
+                if (str_starts_with($this->avatar_url, 'http://') || str_starts_with($this->avatar_url, 'https://')) {
+                    return $this->avatar_url;
+                }
+                return \Illuminate\Support\Facades\Storage::disk('s3')->url($this->avatar_url);
+            }
+        );
+    }
+
     // علاقة عكسية: هذا البروفايل يخص مستخدماً واحداً
     public function user()
     {

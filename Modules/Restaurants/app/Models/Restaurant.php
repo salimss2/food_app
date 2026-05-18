@@ -32,11 +32,18 @@ class Restaurant extends Model
         'rating_count',
     ];
 
-    protected $appends = ['is_open', 'logo_url', 'image_url'];
+    protected $appends = ['is_open', 'logo_url', 'image_url', 'logo_full_url'];
 
     public function getImageUrlAttribute()
     {
         return $this->image_path ? \Illuminate\Support\Facades\Storage::disk('s3')->url($this->image_path) : null;
+    }
+
+    protected function logoFullUrl(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: fn () => $this->logo ? \Illuminate\Support\Facades\Storage::disk('s3')->url($this->logo) : null,
+        );
     }
 
     public function getIsOpenAttribute()

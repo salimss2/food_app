@@ -41,7 +41,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/') . '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
@@ -59,7 +59,6 @@ return [
             'throw' => false,
             'report' => false,
         ],
-
         'firebase_s3' => [
             'driver' => 's3',
             'key' => env('FIREBASE_STORAGE_ACCESS_KEY_ID'),

@@ -34,11 +34,18 @@ class User extends Authenticatable
         'otp_expires_at',
     ];
 
-    protected $appends = ['image_url'];
+    protected $appends = ['image_url', 'profile_picture_full_url'];
 
     public function getImageUrlAttribute()
     {
         return $this->image_path ? \Illuminate\Support\Facades\Storage::disk('s3')->url($this->image_path) : null;
+    }
+
+    protected function profilePictureFullUrl(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: fn () => $this->profile_picture ? \Illuminate\Support\Facades\Storage::disk('s3')->url($this->profile_picture) : null,
+        );
     }
 
 

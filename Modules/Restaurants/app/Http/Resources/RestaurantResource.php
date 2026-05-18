@@ -28,6 +28,7 @@ class RestaurantResource extends JsonResource
             'logo' => $this->logo
                 ? asset('storage/' . $this->logo)
                 : 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random',
+            'logo_full_url' => $this->logo_full_url,
             'description' => $this->description,
             'phone' => $this->phone,
             'meal_categories' => CategoryResource::collection($this->whenLoaded('mealCategories')),

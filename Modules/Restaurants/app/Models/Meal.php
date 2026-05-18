@@ -36,11 +36,18 @@ class Meal extends Model
         'discount_end' => 'datetime',
     ];
 
-    protected $appends = ['image_url', 'price_after_discount'];
+    protected $appends = ['image_url', 'price_after_discount', 'image_full_url'];
 
     public function getImageUrlAttribute()
     {
         return $this->image_path ? \Illuminate\Support\Facades\Storage::disk('s3')->url($this->image_path) : null;
+    }
+
+    protected function imageFullUrl(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: fn () => $this->image ? \Illuminate\Support\Facades\Storage::disk('s3')->url($this->image) : null,
+        );
     }
 
     public function getPriceAfterDiscountAttribute()
