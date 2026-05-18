@@ -30,7 +30,12 @@ class Restaurant extends Model
         'commission_rate',
     ];
 
-    protected $appends = ['is_open', 'logo_url'];
+    protected $appends = ['is_open', 'logo_url', 'image_url'];
+
+    public function getImageUrlAttribute()
+    {
+        return $this->image_path ? \Illuminate\Support\Facades\Storage::disk('s3')->url($this->image_path) : null;
+    }
 
     public function getIsOpenAttribute()
     {

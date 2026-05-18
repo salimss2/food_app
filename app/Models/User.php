@@ -34,6 +34,13 @@ class User extends Authenticatable
         'otp_expires_at',
     ];
 
+    protected $appends = ['image_url'];
+
+    public function getImageUrlAttribute()
+    {
+        return $this->image_path ? \Illuminate\Support\Facades\Storage::disk('s3')->url($this->image_path) : null;
+    }
+
 
 
     public function driverOrders()

@@ -40,7 +40,7 @@ class Meal extends Model
 
     public function getImageUrlAttribute()
     {
-        return $this->image ? asset('storage/' . $this->image) : asset('assets/default-meal.png');
+        return $this->image_path ? \Illuminate\Support\Facades\Storage::disk('s3')->url($this->image_path) : null;
     }
 
     public function getPriceAfterDiscountAttribute()
