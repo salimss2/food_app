@@ -390,10 +390,11 @@
                                             <span id="err-email" class="text-red-500 text-xs hidden mt-1 block"></span>
                                         </div>
                                         <div>
-                                            <label
-                                                class="block text-sm font-medium text-gray-700">{{ __('ID Number') }}</label>
+                                            <label class="block text-sm font-medium text-gray-700">{{ __('ID Number') }}
+                                                <span class="text-red-500">*</span></label>
                                             <input type="text" id="driverIdNumber" name="id_number"
-                                                class="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm">
+                                                class="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                                                required>
                                         </div>
                                         <div>
                                             <label
@@ -426,23 +427,29 @@
                                     <div class="space-y-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
                                         <div>
                                             <label
-                                                class="block text-sm font-medium text-gray-700">{{ __('Vehicle Model') }}</label>
+                                                class="block text-sm font-medium text-gray-700">{{ __('Vehicle Model') }}
+                                                <span class="text-red-500">*</span></label>
                                             <input type="text" id="vehicleModel" name="vehicle_model"
                                                 placeholder="e.g. Toyota Camry 2020"
-                                                class="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm">
+                                                class="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                                                required>
                                         </div>
                                         <div>
                                             <label
-                                                class="block text-sm font-medium text-gray-700">{{ __('Plate Number') }}</label>
+                                                class="block text-sm font-medium text-gray-700">{{ __('Plate Number') }}
+                                                <span class="text-red-500">*</span></label>
                                             <input type="text" id="vehiclePlate" name="vehicle_plate"
                                                 placeholder="e.g. ABC-1234"
-                                                class="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm">
+                                                class="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                                                required>
                                         </div>
                                         <div>
                                             <label
-                                                class="block text-sm font-medium text-gray-700">{{ __('VIN (Vehicle Identification)') }}</label>
+                                                class="block text-sm font-medium text-gray-700">{{ __('VIN (Vehicle Identification)') }}
+                                                <span class="text-red-500">*</span></label>
                                             <input type="text" id="vehicleVin" name="vehicle_vin"
-                                                class="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm">
+                                                class="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                                                required>
                                         </div>
                                     </div>
                                     <div class="mt-4">

@@ -439,7 +439,6 @@
                                             <select id="rRole"
                                                 class="mt-1 block w-full rounded border-gray-300 py-1.5 px-2 text-sm shadow-sm focus:ring-primary focus:border-primary">
                                                 <option value="Restaurant Admin">{{ __('Restaurant Admin') }}</option>
-                                                <option value="Admin">{{ __('Admin') }}</option>
                                             </select>
                                         </div>
                                     </div>

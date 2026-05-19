@@ -140,7 +140,8 @@
                     <div class="w-full lg:w-1/4">
                         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 sticky top-20">
                             <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 border-b pb-2">
-                                {{ __('Profile Stats') }}</h3>
+                                {{ __('Profile Stats') }}
+                            </h3>
 
                             <div class="space-y-4">
                                 <div>
@@ -148,75 +149,32 @@
                                     </p>
                                     <div class="mt-1 flex items-center">
                                         <div class="w-2 h-2 rounded-full {{ $dotColor }} me-2"></div>
-                                        <span class="font-medium text-sm text-gray-900">{{ $statusLabel }}</span>
+                                        <span class="font-medium text-sm text-gray-900">{{ $driver->status }}</span>
                                     </div>
                                 </div>
                                 <div>
                                     <p class="text-xs text-gray-500 uppercase tracking-wider mb-2">
-                                        {{ __('Live Availability') }}</p>
-                                    @if(strtolower($driver->status ?? 'inactive') !== 'active')
-                                        <div
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-500 font-medium text-xs">
-                                            <span class="w-2 h-2 rounded-full bg-gray-400"></span>
-                                            {{ __('Blocked') }}
-                                        </div>
-                                    @else
-                                        <button id="detailsAvailabilityToggle"
-                                            onclick="toggleDetailsAvailability({{ $driver->id }}, this)"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border focus:outline-none transition-all duration-200 {{ $isOnline ? 'border-green-200 bg-green-50 text-green-800 hover:bg-green-100' : 'border-red-200 bg-red-50 text-red-800 hover:bg-red-100' }}">
-                                            <span
-                                                class="availability-dot w-2 h-2 rounded-full {{ $isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500' }}"></span>
-                                            <span
-                                                class="availability-text font-medium">{{ $isOnline ? __('Online') : __('Offline') }}</span>
-                                        </button>
-                                    @endif
+                                        {{ __('Live Availability') }}
+                                    </p>
+                                    <span
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-medium text-xs {{ $driver->is_online ? 'border-green-200 bg-green-50 text-green-800' : 'border-red-200 bg-red-50 text-red-800' }}">
+                                        <span
+                                            class="w-2 h-2 rounded-full {{ $driver->is_online ? 'bg-green-500' : 'bg-red-500' }}"></span>
+                                        {{ $driver->is_online ? 'متصل' : 'غير متصل' }}
+                                    </span>
                                 </div>
                                 <div>
                                     <p class="text-xs text-gray-500 uppercase tracking-wider">
-                                        {{ __('Total Deliveries') }}</p>
-                                    <p class="mt-1 font-semibold text-lg text-gray-900">1,245</p>
+                                        {{ __('Total Deliveries') }}
+                                    </p>
+                                    <p class="mt-1 font-semibold text-lg text-gray-900">
+                                        {{ $driver->driverOrders()->where('status', 'delivered')->count() }}</p>
                                 </div>
                                 <div>
                                     <p class="text-xs text-gray-500 uppercase tracking-wider">{{ __('Join Date') }}</p>
                                     <p class="mt-1 font-medium text-sm text-gray-900">
-                                        {{ $driver->created_at->format('M d, Y') }}</p>
-                                </div>
-                                <div class="pt-4 border-t border-gray-100">
-                                    <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-                                        {{ __('Quick Actions') }}</h3>
-                                    <div class="space-y-2">
-                                        <button
-                                            class="w-full flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition"
-                                            onclick="toggleStatus()">
-                                            <span id="statusActionText">{{ __('Block Driver') }}</span>
-                                            <div id="statusToggleBtn"
-                                                class="w-8 h-4 rounded-full bg-green-400 relative transition-colors duration-300">
-                                                <div
-                                                    class="absolute end-0.5 top-0.5 bg-white w-3 h-3 rounded-full shadow-sm transition-transform duration-300">
-                                                </div>
-                                            </div>
-                                        </button>
-                                        <button onclick="passwordReset()"
-                                            class="w-full flex items-center px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition">
-                                            <svg class="w-4 h-4 me-2 text-gray-400" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z">
-                                                </path>
-                                            </svg>
-                                            {{ __('Reset Password') }}
-                                        </button>
-                                        <button onclick="switchTab('documents')"
-                                            class="w-full flex items-center px-3 py-2 border border-primary text-primary rounded-lg text-sm font-medium hover:bg-indigo-50 transition">
-                                            <svg class="w-4 h-4 me-2" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4.879-4.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242z">
-                                                </path>
-                                            </svg>
-                                            {{ __('View ID Documents') }}
-                                        </button>
-                                    </div>
+                                        {{ $driver->created_at->format('M d, Y') }}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -231,26 +189,6 @@
                                 <button onclick="switchTab('orders')" id="tab-orders"
                                     class="tab-btn active shrink-0 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition-colors focus:outline-none">
                                     {{ __('Orders') }}
-                                </button>
-                                <button onclick="switchTab('map')" id="tab-map"
-                                    class="tab-btn shrink-0 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition-colors focus:outline-none">
-                                    {{ __('Map') }}
-                                </button>
-                                <button onclick="switchTab('financial')" id="tab-financial"
-                                    class="tab-btn shrink-0 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition-colors focus:outline-none">
-                                    {{ __('Financial') }}
-                                </button>
-                                <button onclick="switchTab('reviews')" id="tab-reviews"
-                                    class="tab-btn shrink-0 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition-colors focus:outline-none">
-                                    {{ __('Reviews') }}
-                                </button>
-                                <button onclick="switchTab('documents')" id="tab-documents"
-                                    class="tab-btn shrink-0 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition-colors focus:outline-none">
-                                    {{ __('Documents') }}
-                                </button>
-                                <button onclick="switchTab('activity')" id="tab-activity"
-                                    class="tab-btn shrink-0 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition-colors focus:outline-none">
-                                    {{ __('Activity') }}
                                 </button>
                             </div>
 
@@ -287,292 +225,55 @@
                                                 </tr>
                                             </thead>
                                             <tbody id="ordersTableBody" class="divide-y divide-gray-200 bg-white">
-                                                <!-- Populated via JS -->
+                                                @forelse($recentOrders as $order)
+                                                    @php
+                                                        $status = strtolower($order->status);
+                                                        $badgeColor = match($status) {
+                                                            'delivered', 'completed' => 'bg-green-100 text-green-800',
+                                                            'canceled', 'cancelled' => 'bg-red-100 text-red-800',
+                                                            'picked_up', 'out_for_delivery' => 'bg-blue-100 text-blue-800',
+                                                            default => 'bg-yellow-100 text-yellow-800'
+                                                        };
+                                                    @endphp
+                                                    <tr class="hover:bg-gray-50 transition-colors">
+                                                        <td class="px-6 py-4 font-medium text-gray-900">#{{ $order->order_number ?? $order->id }}</td>
+                                                        <td class="px-6 py-4">{{ $order->created_at->format('M d, Y - H:i') }}</td>
+                                                        <td class="px-6 py-4">{{ $order->restaurant->name ?? '—' }}</td>
+                                                        <td class="px-6 py-4">{{ $order->user->name ?? '—' }}</td>
+                                                        <td class="px-6 py-4 font-semibold text-gray-900">{{ number_format($order->total ?? $order->total_price ?? 0, 2) }} {{ __('SAR') }}</td>
+                                                        <td class="px-6 py-4">
+                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $badgeColor }}">
+                                                                {{ __(ucfirst($order->status)) }}
+                                                            </span>
+                                                        </td>
+                                                        <td class="px-6 py-4">
+                                                            <button onclick="openTimeline('#{{ $order->order_number ?? $order->id }}')" class="text-primary hover:text-primary_dark text-xs font-semibold flex items-center focus:outline-none">
+                                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                                {{ __('Timeline') }}
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                                                            {{ __('No orders found for this driver.') }}
+                                                        </td>
+                                                    </tr>
+                                                @endforelse
                                             </tbody>
                                         </table>
                                     </div>
                                 </div>
 
-                                <!-- Tab: Map -->
-                                <div id="content-map" class="tab-content hidden-el">
-                                    <h3 class="text-lg font-bold text-gray-900 mb-4">{{ __('Driver Live Location') }}
-                                    </h3>
-                                    <!-- Map Placeholder -->
-                                    <div
-                                        class="w-full h-96 bg-gray-200 rounded-xl relative overflow-hidden border border-gray-300 flex items-center justify-center">
-                                        <!-- Use a placeholder background image to simulate a map -->
-                                        <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=80"
-                                            alt="Map view"
-                                            class="absolute inset-0 w-full h-full object-cover opacity-80">
 
-                                        <!-- Map Overlay elements -->
-                                        <div
-                                            class="absolute inset-x-0 top-0 bg-gradient-to-b from-gray-900/50 to-transparent p-4 text-white">
-                                            <div class="flex items-center text-sm font-medium">
-                                                <span
-                                                    class="w-2 h-2 rounded-full bg-green-400 animate-pulse me-2"></span>
-                                                {{ __('Tracking Active - Last updated: Just now') }}
-                                            </div>
-                                        </div>
 
-                                        <!-- Driver Marker (Pulsing) -->
-                                        <div
-                                            class="absolute z-10 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                                            <div class="relative flex items-center justify-center">
-                                                <div
-                                                    class="absolute w-12 h-12 bg-indigo-400 rounded-full animate-ping opacity-75">
-                                                </div>
-                                                <div
-                                                    class="relative w-8 h-8 bg-indigo-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center z-10">
-                                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8">
-                                                        </path>
-                                                    </svg>
-                                                </div>
-                                            </div>
-                                            <div
-                                                class="bg-white px-2 py-1 rounded text-xs font-bold shadow-md mt-1 text-gray-800">
-                                                {{ Str::words($driver->name, 1, '') }}</div>
-                                        </div>
 
-                                        <!-- Order Marker (Bouncing) -->
-                                        <div
-                                            class="absolute z-10 bottom-1/4 right-1/3 transform flex flex-col items-center animate-bounce">
-                                            <div class="text-red-500">
-                                                <svg class="w-8 h-8 drop-shadow-md" fill="currentColor"
-                                                    viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd"
-                                                        d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                                                        clip-rule="evenodd" />
-                                                </svg>
-                                            </div>
-                                            <div
-                                                class="bg-white px-2 py-1 rounded text-xs font-bold shadow-md -mt-1 text-gray-800">
-                                                Delivery #1002</div>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <!-- Tab: Financial -->
-                                <div id="content-financial" class="tab-content hidden-el">
-                                    <!-- Summary Cards -->
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                        <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 shadow-sm">
-                                            <p class="text-sm font-medium text-indigo-800 mb-1">
-                                                {{ __('Total Earnings') }}</p>
-                                            <h4 class="text-2xl font-bold text-indigo-900">$4,520.00</h4>
-                                        </div>
-                                        <div class="bg-green-50 border border-green-100 rounded-xl p-4 shadow-sm">
-                                            <p class="text-sm font-medium text-green-800 mb-1">
-                                                {{ __('Withdrawn Amount') }}</p>
-                                            <h4 class="text-2xl font-bold text-green-900">$3,200.00</h4>
-                                        </div>
-                                        <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 shadow-sm">
-                                            <p class="text-sm font-medium text-amber-800 mb-1">
-                                                {{ __('Pending Balance') }}</p>
-                                            <h4
-                                                class="text-2xl font-bold text-amber-900 flex items-center justify-between">
-                                                $1,320.00
-                                                <button
-                                                    class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded transition-colors focus:outline-none"
-                                                    onclick="processPayout()">{{ __('Payout') }}</button>
-                                            </h4>
-                                        </div>
-                                    </div>
 
-                                    <div class="flex justify-between items-center mb-4">
-                                        <h3 class="text-lg font-bold text-gray-900">{{ __('Recent Transactions') }}</h3>
-                                        <div class="flex space-x-reverse space-x-2">
-                                            <button
-                                                class="px-3 py-1 text-xs font-medium rounded-full bg-primary text-white focus:outline-none">{{ __('Daily') }}</button>
-                                            <button
-                                                class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 focus:outline-none">{{ __('Weekly') }}</button>
-                                            <button
-                                                class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 focus:outline-none">{{ __('Monthly') }}</button>
-                                        </div>
-                                    </div>
-                                    <div class="overflow-x-auto w-full border border-gray-200 rounded-lg">
-                                        <table class="w-full whitespace-nowrap text-start text-sm text-gray-500">
-                                            <thead
-                                                class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b border-gray-200">
-                                                <tr>
-                                                    <th scope="col" class="px-6 py-3">{{ __('Date') }}</th>
-                                                    <th scope="col" class="px-6 py-3">{{ __('Order ID') }}</th>
-                                                    <th scope="col" class="px-6 py-3 text-end">{{ __('Order Amount') }}
-                                                    </th>
-                                                    <th scope="col" class="px-6 py-3 text-end">
-                                                        {{ __('Commission (10%)') }}</th>
-                                                    <th scope="col" class="px-6 py-3 text-end">{{ __('Net Earning') }}
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="financialTableBody" class="divide-y divide-gray-200 bg-white">
-                                                <!-- Populated via JS -->
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
 
-                                <!-- Tab: Reviews -->
-                                <div id="content-reviews" class="tab-content hidden-el">
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <!-- Rating Summary -->
-                                        <div class="md:col-span-1">
-                                            <div
-                                                class="bg-gray-50 rounded-xl p-6 border border-gray-200 text-center shadow-sm">
-                                                <h4 class="text-gray-500 text-sm font-medium mb-2">
-                                                    {{ __('Average Rating') }}</h4>
-                                                <p class="text-4xl font-bold text-gray-900 mb-2">4.5</p>
-                                                <div class="flex justify-center text-yellow-400 mb-2">
-                                                    <svg class="w-6 h-6 fill-current" viewBox="0 0 20 20">
-                                                        <path
-                                                            d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                                                    </svg>
-                                                    <svg class="w-6 h-6 fill-current" viewBox="0 0 20 20">
-                                                        <path
-                                                            d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                                                    </svg>
-                                                    <svg class="w-6 h-6 fill-current" viewBox="0 0 20 20">
-                                                        <path
-                                                            d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                                                    </svg>
-                                                    <svg class="w-6 h-6 fill-current" viewBox="0 0 20 20">
-                                                        <path
-                                                            d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                                                    </svg>
-                                                    <svg class="w-6 h-6 text-gray-300 fill-current" viewBox="0 0 20 20">
-                                                        <path
-                                                            d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                                                    </svg>
-                                                </div>
-                                                <p class="text-sm text-gray-500">{{ __('Based on 120 reviews') }}</p>
-                                            </div>
-                                        </div>
-                                        <!-- Reviews List -->
-                                        <div class="md:col-span-2">
-                                            <h3 class="text-lg font-bold text-gray-900 mb-4">
-                                                {{ __('Customer Reviews') }}</h3>
-                                            <div class="space-y-4" id="reviewsContainer">
-                                                <!-- Populated via JS -->
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <!-- Tab: Documents -->
-                                <div id="content-documents" class="tab-content hidden-el">
-                                    <h3 class="text-lg font-bold text-gray-900 mb-4">
-                                        {{ __('Driver Credentials & Documents') }}</h3>
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        <!-- License -->
-                                        <div
-                                            class="bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group relative">
-                                            <span
-                                                class="absolute top-6 end-6 z-10 inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800 shadow-sm border border-green-200">{{ __('Verified') }}</span>
-                                            <div class="aspect-w-16 aspect-h-10 w-full mb-3 overflow-hidden rounded-lg bg-gray-200 cursor-pointer"
-                                                onclick="openImageModal('https://images.unsplash.com/photo-1633613286991-611fe299c4be?auto=format&fit=crop&w=600&q=80', '{{ __('Driver License') }}')">
-                                                <img src="https://images.unsplash.com/photo-1633613286991-611fe299c4be?auto=format&fit=crop&w=400&q=60"
-                                                    alt="License"
-                                                    class="object-cover w-full h-40 group-hover:scale-105 transition-transform duration-300">
-                                            </div>
-                                            <p class="text-sm font-bold text-gray-900 mb-2">{{ __('Driving License') }}
-                                            </p>
-                                            <div class="flex space-x-reverse space-x-2">
-                                                <button
-                                                    class="flex-1 px-3 py-1.5 text-xs font-bold text-white bg-green-500 hover:bg-green-600 rounded drop-shadow-sm transition-colors focus:outline-none opacity-50 cursor-not-allowed">{{ __('Approve') }}</button>
-                                                <button
-                                                    class="flex-1 px-3 py-1.5 text-xs font-bold text-gray-600 bg-white border border-gray-300 hover:bg-gray-50 rounded drop-shadow-sm transition-colors focus:outline-none">{{ __('Reject') }}</button>
-                                            </div>
-                                        </div>
-                                        <!-- ID Card -->
-                                        <div
-                                            class="bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group relative">
-                                            <span
-                                                class="absolute top-6 end-6 z-10 inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-yellow-100 text-yellow-800 shadow-sm border border-yellow-200">{{ __('Pending') }}</span>
-                                            <div class="aspect-w-16 aspect-h-10 w-full mb-3 overflow-hidden rounded-lg bg-gray-200 cursor-pointer"
-                                                onclick="openImageModal('https://images.unsplash.com/photo-1544211151-689d2d091a18?auto=format&fit=crop&w=600&q=80', '{{ __('National ID Card') }}')">
-                                                <img src="https://images.unsplash.com/photo-1544211151-689d2d091a18?auto=format&fit=crop&w=400&q=60"
-                                                    alt="ID Card"
-                                                    class="object-cover w-full h-40 group-hover:scale-105 transition-transform duration-300">
-                                            </div>
-                                            <p class="text-sm font-bold text-gray-900 mb-2">{{ __('National ID') }}</p>
-                                            <div class="flex space-x-reverse space-x-2">
-                                                <button
-                                                    class="flex-1 px-3 py-1.5 text-xs font-bold text-white bg-green-500 hover:bg-green-600 rounded drop-shadow-sm transition-colors focus:outline-none">{{ __('Approve') }}</button>
-                                                <button
-                                                    class="flex-1 px-3 py-1.5 text-xs font-bold text-gray-600 bg-white border border-gray-300 hover:bg-gray-50 rounded drop-shadow-sm transition-colors focus:outline-none">{{ __('Reject') }}</button>
-                                            </div>
-                                        </div>
-                                        <!-- Vehicle Registration -->
-                                        <div
-                                            class="bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group relative">
-                                            <span
-                                                class="absolute top-6 end-6 z-10 inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800 shadow-sm border border-green-200">{{ __('Verified') }}</span>
-                                            <div class="aspect-w-16 aspect-h-10 w-full mb-3 overflow-hidden rounded-lg bg-gray-200 cursor-pointer"
-                                                onclick="openImageModal('https://images.unsplash.com/photo-1617871217743-1b9136125026?auto=format&fit=crop&w=600&q=80', '{{ __('Vehicle Registration') }}')">
-                                                <img src="https://images.unsplash.com/photo-1617871217743-1b9136125026?auto=format&fit=crop&w=400&q=60"
-                                                    alt="Vehicle Reg"
-                                                    class="object-cover w-full h-40 group-hover:scale-105 transition-transform duration-300">
-                                            </div>
-                                            <p class="text-sm font-bold text-gray-900 mb-2">
-                                                {{ __('Vehicle Registration') }}</p>
-                                            <div class="flex space-x-reverse space-x-2">
-                                                <button
-                                                    class="flex-1 px-3 py-1.5 text-xs font-bold text-white bg-green-500 hover:bg-green-600 rounded drop-shadow-sm transition-colors focus:outline-none opacity-50 cursor-not-allowed">{{ __('Approve') }}</button>
-                                                <button
-                                                    class="flex-1 px-3 py-1.5 text-xs font-bold text-gray-600 bg-white border border-gray-300 hover:bg-gray-50 rounded drop-shadow-sm transition-colors focus:outline-none">{{ __('Reject') }}</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <!-- Tab: Activity -->
-                                <div id="content-activity" class="tab-content hidden-el">
-                                    <h3 class="text-lg font-bold text-gray-900 mb-4">{{ __('Driver Activity Log') }}
-                                    </h3>
-                                    <div class="relative ps-4 border-s-2 border-indigo-200 space-y-6">
-                                        <div class="relative">
-                                            <div
-                                                class="absolute -start-[25px] top-1 w-4 h-4 rounded-full bg-green-500 border-2 border-white shadow">
-                                            </div>
-                                            <p class="text-sm text-gray-500 mb-1">{{ __('Today, 2:45 PM') }}</p>
-                                            <h4 class="text-md font-bold text-gray-900">
-                                                {{ __('Completed Order #1002') }}</h4>
-                                            <p class="text-sm text-gray-600">
-                                                {{ __('Delivered successfully to Ali S. in Al Olaya') }}</p>
-                                        </div>
-                                        <div class="relative">
-                                            <div
-                                                class="absolute -start-[25px] top-1 w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow">
-                                            </div>
-                                            <p class="text-sm text-gray-500 mb-1">{{ __('Today, 2:10 PM') }}</p>
-                                            <h4 class="text-md font-bold text-gray-900">
-                                                {{ __('Picked up Order #1002') }}</h4>
-                                            <p class="text-sm text-gray-600">{{ __('From Burger King branch') }}</p>
-                                        </div>
-                                        <div class="relative">
-                                            <div
-                                                class="absolute -start-[25px] top-1 w-4 h-4 rounded-full bg-indigo-500 border-2 border-white shadow">
-                                            </div>
-                                            <p class="text-sm text-gray-500 mb-1">{{ __('Today, 1:00 PM') }}</p>
-                                            <h4 class="text-md font-bold text-gray-900">{{ __('Driver Logged In') }}
-                                            </h4>
-                                            <p class="text-sm text-gray-600">{{ __('App version 2.4.1') }}</p>
-                                        </div>
-                                        <div class="relative">
-                                            <div
-                                                class="absolute -start-[25px] top-1 w-4 h-4 rounded-full bg-yellow-500 border-2 border-white shadow">
-                                            </div>
-                                            <p class="text-sm text-gray-500 mb-1">{{ __('Yesterday, 9:30 AM') }}</p>
-                                            <h4 class="text-md font-bold text-gray-900">
-                                                {{ __('Modified Profile Settings') }}</h4>
-                                            <p class="text-sm text-gray-600">
-                                                {{ __('Changed driving vehicle to Toyota Corolla 2021') }}</p>
-                                        </div>
-                                    </div>
-                                </div>
+
 
                             </div>
                         </div>
@@ -650,7 +351,8 @@
                     class="relative transform overflow-hidden rounded-xl bg-white text-start shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg modal-content">
                     <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4 border-b border-gray-100">
                         <h3 class="text-lg font-semibold leading-6 text-gray-900 mb-4">
-                            {{ __('Send Instant Notification') }}</h3>
+                            {{ __('Send Instant Notification') }}
+                        </h3>
                         <form id="notificationForm" onsubmit="sendNotification(event)">
                             <div class="space-y-4">
                                 <div>

@@ -206,51 +206,7 @@
                                 <p class="mt-1 font-semibold text-lg text-gray-900">{{ __('18-22 mins') }}</p>
                             </div>
 
-                            <div class="pt-4 border-t border-gray-100">
-                                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-                                    {{ __('Quick Actions') }}
-                                </h3>
-                                <div class="space-y-2">
-                                    <button onclick="openModal('notificationModal')"
-                                        class="w-full flex items-center px-3 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary_dark transition shadow-sm">
-                                        <svg class="w-4 h-4 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
-                                            </path>
-                                        </svg>
-                                        {{ __('Send Notification') }}
-                                    </button>
-                                    <button onclick="openModal('commissionModal')"
-                                        class="w-full flex items-center px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition">
-                                        <svg class="w-4 h-4 me-2 text-gray-400" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z">
-                                            </path>
-                                        </svg>
-                                        {{ __('Change Commission') }}
-                                    </button>
-                                    <button onclick="passwordReset()"
-                                        class="w-full flex items-center px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition">
-                                        <svg class="w-4 h-4 me-2 text-gray-400" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z">
-                                            </path>
-                                        </svg>
-                                        {{ __('Reset Password') }}
-                                    </button>
-                                    <button onclick="openModal('blockModal')"
-                                        class="w-full flex items-center px-3 py-2 border border-red-100 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition">
-                                        <svg class="w-4 h-4 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636">
-                                            </path>
-                                        </svg>
-                                        {{ __('Temporary Block') }}
-                                    </button>
-                                </div>
-                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -265,22 +221,7 @@
                                 class="tab-btn active shrink-0 px-6 py-4 text-sm font-medium border-b-2 border-transparent transition-all focus:outline-none">
                                 {{ __('Performance Metrics') }}
                             </button>
-                            <button onclick="switchTab('financials')" id="tab-financials"
-                                class="tab-btn shrink-0 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition-all focus:outline-none">
-                                {{ __('Financials') }}
-                            </button>
-                            <button onclick="switchTab('menu')" id="tab-menu"
-                                class="tab-btn shrink-0 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition-all focus:outline-none">
-                                {{ __('Menu Preview') }}
-                            </button>
-                            <button onclick="switchTab('reviews')" id="tab-reviews"
-                                class="tab-btn shrink-0 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition-all focus:outline-none">
-                                {{ __('Reviews & Feedback') }}
-                            </button>
-                            <button onclick="switchTab('logistics')" id="tab-logistics"
-                                class="tab-btn shrink-0 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition-all focus:outline-none">
-                                {{ __('Logistics & Map') }}
-                            </button>
+
                             <button onclick="switchTab('orders')" id="tab-orders"
                                 class="tab-btn shrink-0 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition-all focus:outline-none flex items-center">
                                 <svg class="w-4 h-4 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -374,72 +315,7 @@
                                 </div>
                             </div>
 
-                            <!-- Tab: Financials -->
-                            <div id="content-financials" class="tab-content hidden-el transition-opacity duration-300">
-                                <div class="flex flex-col md:flex-row justify-between gap-6 mb-8">
-                                    <div class="flex-1 bg-indigo-50 border border-indigo-100 rounded-xl p-5">
-                                        <p class="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-1">
-                                            {{ __('Current Balance') }}
-                                        </p>
-                                        <h4 class="text-3xl font-bold text-indigo-900">$12,450.00</h4>
-                                        <button
-                                            class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-indigo-700 transition">{{ __('Process Withdrawal') }}</button>
-                                    </div>
-                                    <div class="flex-1 bg-gray-50 border border-gray-100 rounded-xl p-5">
-                                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
-                                            {{ __('Commission Rate') }}
-                                        </p>
-                                        <div class="flex items-baseline gap-2">
-                                            <h4 class="text-3xl font-bold text-gray-900">12%</h4>
-                                            <span class="text-xs text-gray-500">({{ __('Custom Tier') }})</span>
-                                        </div>
-                                        <button onclick="openModal('commissionModal')"
-                                            class="mt-4 text-primary text-sm font-bold flex items-center hover:underline">
-                                            {{ __('Edit Commission') }}
-                                            <svg class="w-4 h-4 ms-1" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M9 5l7 7-7 7"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                                <h4 class="text-sm font-bold text-gray-900 uppercase mb-4">
-                                    {{ __('Withdrawal History') }}
-                                </h4>
-                                <div class="overflow-x-auto border border-gray-100 rounded-xl">
-                                    <table class="w-full text-start text-sm whitespace-nowrap">
-                                        <thead class="bg-gray-50 border-b border-gray-100">
-                                            <tr>
-                                                <th class="px-6 py-4 font-bold text-gray-600">{{ __('Reference') }}</th>
-                                                <th class="px-6 py-4 font-bold text-gray-600">{{ __('Date') }}</th>
-                                                <th class="px-6 py-4 font-bold text-gray-600 text-end">
-                                                    {{ __('Amount') }}
-                                                </th>
-                                                <th class="px-6 py-4 font-bold text-gray-600">{{ __('Status') }}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-gray-50">
-                                            <tr>
-                                                <td class="px-6 py-4 font-medium">{{ __('WD-45812') }}</td>
-                                                <td class="px-6 py-4 text-gray-500">{{ __('Oct 24, 2023') }}</td>
-                                                <td class="px-6 py-4 text-end font-bold text-gray-900">$2,500.00</td>
-                                                <td class="px-6 py-4"><span
-                                                        class="px-2 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700 uppercase">{{ __('Paid') }}</span>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-6 py-4 font-medium">{{ __('WD-45700') }}</td>
-                                                <td class="px-6 py-4 text-gray-500">{{ __('Oct 15, 2023') }}</td>
-                                                <td class="px-6 py-4 text-end font-bold text-gray-900">$1,800.00</td>
-                                                <td class="px-6 py-4"><span
-                                                        class="px-2 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700 uppercase">{{ __('Paid') }}</span>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+
 
                             <!-- Tab: Menu Preview -->
                             <div id="content-menu" class="tab-content hidden-el transition-opacity duration-300">
@@ -562,120 +438,7 @@
                                             {{ __("No meals found for this restaurant.") }}
                                         </div>
                                     @endforelse
-                                </div>
-                            </div>
-
-                            <!-- Tab: Reviews -->
-                            <div id="content-reviews" class="tab-content hidden-el transition-opacity duration-300">
-                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                    <div class="lg:col-span-2 space-y-6">
-                                        <h4 class="text-sm font-bold text-gray-900 uppercase">
-                                            {{ __('Recent Customer Reviews') }}
-                                        </h4>
-                                        <div class="space-y-4">
-                                            <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                                <div class="flex justify-between mb-2">
-                                                    <div class="flex items-center gap-2">
-                                                        <img class="w-8 h-8 rounded-full"
-                                                            src="https://ui-avatars.com/api/?name=Sarah+J."
-                                                            alt="Reviewer">
-                                                        <div>
-                                                            <p class="text-xs font-bold text-gray-900">
-                                                                {{ __('Sarah Johnson') }}
-                                                            </p>
-                                                            <p class="text-[10px] text-gray-500">2 {{ __('hours ago') }}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex text-yellow-400">
-                                                        <svg class="w-4 h-4 fill-current text-indigo-500"
-                                                            viewBox="0 0 20 20">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <span class="ms-1 text-xs font-bold text-indigo-600">5.0</span>
-                                                    </div>
-                                                </div>
-                                                <p class="text-sm text-gray-700 leading-relaxed italic">
-                                                    "{{ __('The food was absolutely divine! Best pizza in town. Delivery was also surprisingly quick.') }}"
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h4 class="text-sm font-bold text-gray-900 uppercase mb-4">
-                                            {{ __('Pending Complaints') }}
-                                        </h4>
-                                        <div class="space-y-3">
-                                            <div class="p-4 border-s-4 border-red-500 bg-red-50 rounded-lg">
-                                                <div class="flex justify-between mb-1"><span
-                                                        class="text-[10px] font-bold text-red-600 uppercase tracking-wider">{{ __('Late Delivery') }}</span><span
-                                                        class="text-[10px] text-gray-500">{{ __('ORD-992') }}</span>
-                                                </div>
-                                                <p class="text-xs text-gray-900 line-clamp-2">
-                                                    "{{ __('Customer reported 45 min delay. Driver was stuck in traffic.') }}"
-                                                </p>
-                                            </div>
-                                            <div class="p-4 border-s-4 border-amber-500 bg-amber-50 rounded-lg">
-                                                <div class="flex justify-between mb-1"><span
-                                                        class="text-[10px] font-bold text-amber-600 uppercase tracking-wider">{{ __('Missing Item') }}</span><span
-                                                        class="text-[10px] text-gray-500">{{ __('ORD-851') }}</span>
-                                                </div>
-                                                <p class="text-xs text-gray-900 line-clamp-2">
-                                                    "{{ __('Missing side beverage mentioned. Resolved via partial refund.') }}"
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Tab: Logistics -->
-                            <div id="content-logistics" class="tab-content hidden-el transition-opacity duration-300">
-                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                    <div class="lg:col-span-2">
-                                        <div id="driversMap"
-                                            class="w-full h-96 rounded-xl border border-gray-200 shadow-md z-0">
-                                        </div>
-                                    </div>
-                                    <div class="space-y-6">
-                                        <h4 class="text-sm font-bold text-gray-900 uppercase">
-                                            {{ __('Recent Assigned Drivers') }}
-                                        </h4>
-                                        <div class="space-y-3">
-                                            <div
-                                                class="flex items-center p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition">
-                                                <img class="w-10 h-10 rounded-full me-3"
-                                                    src="https://ui-avatars.com/api/?name=Ahmed+R.&background=random"
-                                                    alt="{{ __('Driver') }}">
-                                                <div class="flex-1">
-                                                    <p class="text-xs font-bold text-gray-900">{{ __('Ahmed Rashid') }}
-                                                    </p>
-                                                    <p class="text-[10px] text-gray-500">
-                                                        {{ __('Honda Civic - JED 4021') }}
-                                                    </p>
-                                                </div>
-                                                <span
-                                                    class="text-[10px] font-bold text-indigo-600">{{ __('Active') }}</span>
-                                            </div>
-                                            <div
-                                                class="flex items-center p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition">
-                                                <img class="w-10 h-10 rounded-full me-3"
-                                                    src="https://ui-avatars.com/api/?name=Ali+H.&background=random"
-                                                    alt="{{ __('Driver') }}">
-                                                <div class="flex-1">
-                                                    <p class="text-xs font-bold text-gray-900">{{ __('Ali Hassan') }}
-                                                    </p>
-                                                    <p class="text-[10px] text-gray-500">
-                                                        {{ __('Toyota Yaris - RIY 1192') }}
-                                                    </p>
-                                                </div>
-                                                <span
-                                                    class="text-[10px] font-bold text-gray-400 font-mono">{{ __('Idle') }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                  </div>
                             </div>
 
                             <!-- Tab: Orders -->
