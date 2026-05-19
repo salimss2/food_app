@@ -17,13 +17,15 @@ class SendAdminBroadcastJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $adminNotification;
+    protected $senderId;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(AdminNotification $adminNotification)
+    public function __construct(AdminNotification $adminNotification, $senderId = null)
     {
         $this->adminNotification = $adminNotification;
+        $this->senderId = $senderId;
     }
 
     /**
@@ -37,6 +39,16 @@ class SendAdminBroadcastJob implements ShouldQueue
         }
 
         $query = User::query();
+
+        // Exclude currently authenticated user who sent the notification
+        if ($this->senderId) {
+            $query->where('id', '!=', $this->senderId);
+        }
+
+        // Exclude system administrators (System Admin role) from receiving promotional/broadcast notifications
+        $query->whereDoesntHave('roles', function ($q) {
+            $q->whereIn('name', ['System Admin']);
+        });
 
         // If target_role is not 'all', filter users by that specific role
         if ($this->adminNotification->target_role !== 'all') {

@@ -75,9 +75,8 @@ class UserController extends Controller implements HasMiddleware // إضافة i
 
         $users = $query->latest()->paginate(10)->appends($request->all());
 
-        // Modal Roles (excluding Customer, Driver, Restaurant Admin)
+        // Modal Roles (excluding Driver, Restaurant Admin)
         $roles = \Spatie\Permission\Models\Role::whereNotIn('name', [
-            'Customer',
             'Driver',
             'Restaurant Admin'
         ])->get();
@@ -136,22 +135,23 @@ class UserController extends Controller implements HasMiddleware // إضافة i
         return view('admin::user management.create', compact('roles'));
     }
 
-    // حفظ المستخدم الجديد
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8',
-            'phone' => 'nullable|string|max:20',
-            'role' => 'required|exists:roles,name',
+            'password' => 'nullable|string|min:8',
+            'phone' => 'nullable|string',
+            'role' => 'required|string',
             'status' => 'required|in:Active,Blocked,Inactive',
         ]);
+
+        $password = $request->filled('password') ? $request->password : \Illuminate\Support\Str::random(10);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => bcrypt($request->password),
+            'password' => bcrypt($password),
             'phone' => $request->phone,
             'status' => $request->status,
         ]);
