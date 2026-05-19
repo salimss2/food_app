@@ -270,6 +270,7 @@ class OrdersController extends Controller
             'items' => ['nullable', 'array', 'min:1'],
             'items.*.meal_id' => ['required_without:items.*.offer_id', 'nullable', 'integer', 'exists:meals,id'],
             'items.*.offer_id' => ['required_without:items.*.meal_id', 'nullable', 'integer', 'exists:offers,id'],
+            'items.*.variant_id' => ['nullable', 'integer', 'exists:meal_variants,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
         ]);
 
@@ -372,22 +373,44 @@ class OrdersController extends Controller
                         ], 422);
                     }
 
+                    // --- Variant Customization Logic ---
+                    $variant = null;
+                    $variantName = null;
+                    $variantId = null;
+                    if (!empty($itemData['variant_id'])) {
+                        $variant = \Modules\Restaurants\Models\MealVariant::where('id', $itemData['variant_id'])
+                            ->where('meal_id', $meal->id)
+                            ->where('is_active', true)
+                            ->first();
+
+                        if (!$variant) {
+                            return response()->json([
+                                'status' => false,
+                                'message' => "المتغير المطلوب للوجبة {$meal->name} غير متوفر أو غير نشط"
+                            ], 422);
+                        }
+
+                        $variantId = $variant->id;
+                        $variantName = $variant->name;
+                    }
+
                     $now = now();
                     $hasActiveDiscount = $meal->discount_type &&
                         $meal->discount_value !== null &&
                         ($meal->discount_start === null || $now >= $meal->discount_start) &&
                         ($meal->discount_end === null || $now <= $meal->discount_end);
 
-                    $price = (float) $meal->price;
+                    $basePrice = $variant ? (float) $variant->price : (float) $meal->price;
+                    $price = $basePrice;
                     $type = 'regular_meal';
 
                     if ($hasActiveDiscount) {
                         $type = 'discounted_meal';
                         if ($meal->discount_type === 'percentage') {
-                            $discountAmount = ($meal->price * $meal->discount_value) / 100;
-                            $price = max(0, (float) ($meal->price - $discountAmount));
+                            $discountAmount = ($basePrice * $meal->discount_value) / 100;
+                            $price = max(0, (float) ($basePrice - $discountAmount));
                         } elseif ($meal->discount_type === 'fixed') {
-                            $price = max(0, (float) ($meal->price - $meal->discount_value));
+                            $price = max(0, (float) ($basePrice - $meal->discount_value));
                         }
                     }
 
@@ -395,9 +418,11 @@ class OrdersController extends Controller
 
                     $processedItems->push((object) [
                         'meal_id' => $meal->id,
+                        'variant_id' => $variantId,
+                        'variant_name' => $variantName,
                         'offer_id' => null,
                         'restaurant_id' => $meal->restaurant_id,
-                        'name' => $meal->name,
+                        'name' => $variantName ? "{$meal->name} ({$variantName})" : $meal->name,
                         'type' => $type,
                         'quantity' => $quantity,
                         'price' => $price,
@@ -499,6 +524,8 @@ class OrdersController extends Controller
 
                     return (object) [
                         'meal_id' => $meal->id,
+                        'variant_id' => null,
+                        'variant_name' => null,
                         'offer_id' => null,
                         'name' => $meal->name,
                         'type' => $type,
@@ -528,6 +555,8 @@ class OrdersController extends Controller
                     $itemsSnapshot = $restaurantItems->map(function ($item) {
                         return [
                             'meal_id' => $item->meal_id,
+                            'variant_id' => $item->variant_id ?? null,
+                            'variant_name' => $item->variant_name ?? null,
                             'offer_id' => $item->offer_id,
                             'name' => $item->name,
                             'type' => $item->type,
@@ -760,6 +789,8 @@ class OrdersController extends Controller
                     OrderItem::create([
                         'order_id' => $order->id,
                         'meal_id' => $item->meal_id,
+                        'variant_id' => $item->variant_id ?? null,
+                        'variant_name' => $item->variant_name ?? null,
                         'offer_id' => $item->offer_id,
                         'type' => $item->type,
                         'combo_meals' => $item->combo_meals,

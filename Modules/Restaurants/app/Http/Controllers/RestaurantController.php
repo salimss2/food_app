@@ -14,7 +14,7 @@ class RestaurantController extends Controller
      */
     public function index()
     {
-        $restaurants = Restaurant::with(['meals', 'offers'])->get();
+        $restaurants = Restaurant::with(['meals.variants', 'offers'])->get();
 
         return RestaurantResource::collection($restaurants);
     }
@@ -40,7 +40,7 @@ class RestaurantController extends Controller
     public function show($id)
     {
         // 1. جلب المطعم مع الأقسام ومع الوجبات داخل كل قسم بطلب واحد
-        $restaurant = Restaurant::with(['meal_categories.meals'])->findOrFail($id);
+        $restaurant = Restaurant::with(['meal_categories.meals.variants'])->findOrFail($id);
 
         // 2. تحويل الكائن إلى مصفوفة للتأكد من المسميات
         $data = $restaurant->toArray();

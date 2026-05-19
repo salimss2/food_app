@@ -34,6 +34,7 @@ class MealResource extends JsonResource
             'restaurant_id' => $this->restaurant_id,
             'meal_category_id' => $this->meal_category_id,
             'category' => new CategoryResource($this->whenLoaded('category')),
+            'variants' => MealVariantResource::collection($this->whenLoaded('variants')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

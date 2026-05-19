@@ -99,4 +99,9 @@ class Meal extends Model
             ->withPivot('quantity')
             ->withTimestamps();
     }
+
+    public function variants(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(MealVariant::class, 'meal_id');
+    }
 }
