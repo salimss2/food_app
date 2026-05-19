@@ -101,7 +101,13 @@ class AdminOrderController extends Controller
 
         // Filters
         if ($request->filled('status') && $request->status !== 'all') {
-            $query->where('status', $request->status);
+            if ($request->status === 'completed') {
+                $query->where('status', 'delivered');
+            } elseif ($request->status === 'cancelled') {
+                $query->where('status', 'canceled');
+            } else {
+                $query->where('status', $request->status);
+            }
         }
         if ($request->filled('restaurant_id')) {
             $query->where('restaurant_id', $request->restaurant_id);
@@ -125,6 +131,16 @@ class AdminOrderController extends Controller
         $drivers = User::role('Driver')->get();
 
         return view('admin::order-history', compact('orders', 'restaurants', 'drivers'));
+    }
+
+    /**
+     * Show detailed view of an order
+     */
+    public function show($id)
+    {
+        $order = Order::with(['items.meal', 'user', 'restaurant', 'driver'])->findOrFail($id);
+
+        return view('admin::orders.show', compact('order'));
     }
 
     /**

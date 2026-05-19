@@ -76,6 +76,7 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/orders', [AdminOrderController::class, 'activeOrders'])->name('admin.orders.index')->middleware('permission:view_orders');
     Route::get('/scheduled-orders', [AdminOrderController::class, 'scheduledOrders'])->name('admin.scheduled-orders.index')->middleware('permission:view_orders');
     Route::get('/order-history', [AdminOrderController::class, 'orderHistory'])->name('admin.order-history.index')->middleware('permission:view_orders');
+    Route::get('/orders/{id}', [AdminOrderController::class, 'show'])->name('admin.orders.show')->middleware('permission:view_orders');
     Route::post('/orders/{id}/force-cancel', [AdminOrderController::class, 'forceCancel'])->name('admin.orders.force-cancel')->middleware('permission:manage_order_status');
     Route::post('/orders/{id}/reassign', [AdminOrderController::class, 'reassignDriver'])->name('admin.orders.reassign')->middleware('permission:manage_order_status');
     Route::post('/orders/{id}/approve', [AdminOrderController::class, 'approvePayment'])->name('admin.orders.approve')->middleware('permission:manage_order_status');
