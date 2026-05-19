@@ -33,7 +33,8 @@ class SearchController extends Controller
                     return [
                         'id' => $restaurant->id,
                         'name' => $restaurant->name,
-                        'logo' => $restaurant->logo_url,
+                        'logo' => $restaurant->logo,
+                        'logo_url' => $restaurant->logo,
                         'location' => $restaurant->location,
                         'is_open' => $restaurant->is_open,
                     ];
@@ -65,14 +66,16 @@ class SearchController extends Controller
                     'restaurant' => [
                         'id' => $restaurant->id,
                         'name' => $restaurant->name,
-                        'logo' => $restaurant->logo_url,
+                        'logo' => $restaurant->logo,
+                        'logo_url' => $restaurant->logo,
                     ],
                     'products' => $restaurantMeals->map(function ($meal) {
                         return [
                             'id' => $meal->id,
                             'name' => $meal->name,
                             'price' => $meal->price,
-                            'image' => $meal->image_url,
+                            'image' => $meal->image,
+                            'image_url' => $meal->image,
                         ];
                     })->values(),
                 ];

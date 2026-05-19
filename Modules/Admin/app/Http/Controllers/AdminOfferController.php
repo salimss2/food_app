@@ -14,7 +14,9 @@ class AdminOfferController extends Controller
      */
     public function index()
     {
-        $offers = AdminOffer::with('restaurant')->latest()->paginate(10);
+        $offers = AdminOffer::with('restaurant')->latest()->paginate(10, ['*'], 'offers_page');
+        
+        $restaurantCombos = \Modules\Restaurants\Models\Offer::with('restaurant')->latest()->paginate(10, ['*'], 'combos_page');
         
         // Fetch active restaurants
         $restaurants = Restaurant::all();
@@ -24,7 +26,7 @@ class AdminOfferController extends Controller
         $totalOffersCount = AdminOffer::count();
         $expiredOffersCount = AdminOffer::where('status', 'inactive')->orWhere('expiry_date', '<', now())->count();
         
-        return view('admin::offers', compact('offers', 'restaurants', 'liveOffersCount', 'totalOffersCount', 'expiredOffersCount'));
+        return view('admin::offers', compact('offers', 'restaurants', 'liveOffersCount', 'totalOffersCount', 'expiredOffersCount', 'restaurantCombos'));
     }
 
     /**

@@ -552,9 +552,8 @@
                     </div>
 
                     {{-- Footer --}}
-                    <div class="px-6 py-4 bg-gray-50 flex items-center justify-between border-t border-gray-100">
-                        <a id="view_profile_link" href="#"
-                            class="text-sm text-primary hover:underline font-medium">{{ __('View Full Profile') }} →</a>
+                    <div class="px-6 py-4 bg-gray-50 flex items-center justify-end border-t border-gray-100">
+                        <a id="view_profile_link" href="#" class="hidden"></a>
                         <button onclick="closeModal('viewUserModal')"
                             class="inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">{{ __('Close') }}</button>
                     </div>
@@ -589,7 +588,7 @@
                     @if(old('phone')) document.getElementById('userPhone').value = @json(old('phone')); @endif
                     @if(old('role')) document.getElementById('userRole').value = @json(old('role')); @endif
                     @if(old('status')) document.getElementById('userStatus').value = @json(old('status')); @endif
-                            }
+                                }
             });
         </script>
     @endif

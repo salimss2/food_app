@@ -16,8 +16,21 @@ class Category extends Model
 
     protected $appends = ['image_url'];
 
+    public function getImageAttribute($value)
+    {
+        if (!$value) {
+            return null;
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        return \Illuminate\Support\Facades\Storage::url($value);
+    }
+
     public function getImageUrlAttribute()
     {
-        return $this->image_path ? \Illuminate\Support\Facades\Storage::disk('s3')->url($this->image_path) : null;
+        return $this->image;
     }
 }

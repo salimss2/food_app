@@ -38,16 +38,28 @@ class Meal extends Model
 
     protected $appends = ['image_url', 'price_after_discount', 'image_full_url'];
 
+    public function getImageAttribute($value)
+    {
+        if (!$value) {
+            return null;
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        return \Illuminate\Support\Facades\Storage::url($value);
+    }
+
     public function getImageUrlAttribute()
     {
-        $path = $this->image ?: $this->image_path;
-        return $path ? \Illuminate\Support\Facades\Storage::url($path) : null;
+        return $this->image;
     }
 
     protected function imageFullUrl(): \Illuminate\Database\Eloquent\Casts\Attribute
     {
         return \Illuminate\Database\Eloquent\Casts\Attribute::make(
-            get: fn () => $this->image ? \Illuminate\Support\Facades\Storage::url($this->image) : null,
+            get: fn() => $this->image,
         );
     }
 

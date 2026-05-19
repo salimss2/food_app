@@ -34,6 +34,20 @@ class Restaurant extends Model
 
     protected $appends = ['is_open', 'logo_url', 'image_url', 'logo_full_url'];
 
+    public function getLogoAttribute($value)
+    {
+        if (!$value) {
+            return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random';
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        $path = str_contains($value, '/') ? $value : 'restaurants/logos/' . $value;
+        return \Illuminate\Support\Facades\Storage::url($path);
+    }
+
     public function getImageUrlAttribute()
     {
         return $this->image_path ? \Illuminate\Support\Facades\Storage::url($this->image_path) : null;
@@ -42,7 +56,7 @@ class Restaurant extends Model
     protected function logoFullUrl(): \Illuminate\Database\Eloquent\Casts\Attribute
     {
         return \Illuminate\Database\Eloquent\Casts\Attribute::make(
-            get: fn () => $this->logo ? \Illuminate\Support\Facades\Storage::url(str_contains($this->logo, '/') ? $this->logo : 'restaurants/logos/' . $this->logo) : null,
+            get: fn() => $this->logo,
         );
     }
 
@@ -58,11 +72,7 @@ class Restaurant extends Model
 
     public function getLogoUrlAttribute()
     {
-        if ($this->logo) {
-            $path = str_contains($this->logo, '/') ? $this->logo : 'restaurants/logos/' . $this->logo;
-            return \Illuminate\Support\Facades\Storage::url($path);
-        }
-        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random';
+        return $this->logo;
     }
 
 

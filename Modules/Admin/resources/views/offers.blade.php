@@ -236,7 +236,75 @@
 
                 @if(isset($offers) && $offers->hasPages())
                     <div class="px-6 py-4 border-t border-gray-200 bg-white">
-                        {{ $offers->links() }}
+                        {{ $offers->appends(request()->query())->links() }}
+                    </div>
+                @endif
+            </div>
+
+            <!-- Restaurant Combo Meals Section -->
+            <div class="mt-12 mb-6">
+                <h2 class="text-xl font-bold text-gray-900">عروض المطاعم - الوجبات المجمعة (Restaurant Combo Meals)</h2>
+                <p class="text-sm text-gray-500 mt-1">عرض ومراقبة الوجبات المجمعة والعروض الترويجية التي أنشأتها
+                    المطاعم.</p>
+            </div>
+
+            <!-- Combos List Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+                <div class="overflow-x-auto w-full">
+                    <table class="w-full whitespace-nowrap text-left text-sm text-gray-500">
+                        <thead
+                            class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b border-gray-200">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">الصورة (Image)</th>
+                                <th scope="col" class="px-6 py-3">العنوان والوصف (Title & Description)</th>
+                                <th scope="col" class="px-6 py-3">المطعم (Restaurant)</th>
+                                <th scope="col" class="px-6 py-3">السعر المخفض (Combo Price)</th>
+                                <th scope="col" class="px-6 py-3">تاريخ الانتهاء (End Date)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 bg-white">
+                            @forelse($restaurantCombos as $combo)
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <img src="{{ $combo->image }}" alt="{{ $combo->title }}"
+                                            class="w-12 h-12 object-cover rounded-lg border border-gray-200">
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm font-bold text-gray-900">{{ $combo->title }}</div>
+                                        <div class="text-xs text-gray-500 max-w-md truncate">
+                                            {{ $combo->description ?? 'لا يوجد وصف' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span
+                                            class="text-sm text-gray-700 font-semibold">{{ $combo->restaurant->name ?? 'غير معروف' }}</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 bg-green-100 text-green-800 rounded-md font-bold text-sm">
+                                            ${{ number_format($combo->combo_price, 2) }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span
+                                            class="text-sm {{ $combo->end_date && \Carbon\Carbon::parse($combo->end_date)->isPast() ? 'text-red-500 font-semibold' : 'text-gray-500' }}">
+                                            {{ $combo->end_date ? \Carbon\Carbon::parse($combo->end_date)->format('M d, Y') : 'مستمر' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="px-6 py-12 text-center">
+                                        <h3 class="text-lg font-medium text-gray-900 mt-2">لا توجد وجبات مجمعة للمطاعم
+                                            حالياً</h3>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @if(isset($restaurantCombos) && $restaurantCombos->hasPages())
+                    <div class="px-6 py-4 border-t border-gray-200 bg-white">
+                        {{ $restaurantCombos->appends(request()->query())->links() }}
                     </div>
                 @endif
             </div>
