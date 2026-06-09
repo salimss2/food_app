@@ -4,6 +4,8 @@ namespace Modules\Restaurants\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Modules\Restaurants\Models\Restaurant;
+use Modules\Restaurants\Http\Resources\RestaurantResource;
 
 class RestaurantController extends Controller
 {
@@ -12,7 +14,9 @@ class RestaurantController extends Controller
      */
     public function index()
     {
-        return view('restaurants::index');
+        $restaurants = Restaurant::with(['meals.variants', 'offers'])->get();
+
+        return RestaurantResource::collection($restaurants);
     }
 
     /**
@@ -26,14 +30,32 @@ class RestaurantController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request) {}
+    public function store(Request $request)
+    {
+    }
 
     /**
      * Show the specified resource.
      */
     public function show($id)
     {
-        return view('restaurants::show');
+        // 1. جلب المطعم مع الأقسام ومع الوجبات داخل كل قسم بطلب واحد
+        $restaurant = Restaurant::with(['meal_categories.meals.variants'])->findOrFail($id);
+
+        // 2. تحويل الكائن إلى مصفوفة للتأكد من المسميات
+        $data = $restaurant->toArray();
+
+        // 3. تأمين وصول الوجبات حتى لو كانت خارج الأقسام (خطة بديلة للفلاتر)
+        // نجمع كل الوجبات من كل الأقسام في قائمة واحدة تسمى 'meals'
+        $allMeals = [];
+        foreach ($restaurant->meal_categories as $category) {
+            foreach ($category->meals as $meal) {
+                $allMeals[] = $meal;
+            }
+        }
+        $data['meals'] = $allMeals;
+
+        return response()->json($data);
     }
 
     /**
@@ -47,10 +69,14 @@ class RestaurantController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id) {}
+    public function update(Request $request, $id)
+    {
+    }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id) {}
+    public function destroy($id)
+    {
+    }
 }

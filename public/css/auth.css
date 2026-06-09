@@ -1,0 +1,31 @@
+/* ================================================
+ * Auth Pages · Shared Styles  (css/auth.css)
+ * ================================================ */
+
+/* Utility */
+.hidden-el { display: none !important; }
+
+/* Fade & scale animations */
+.fade-in  { animation: fadeIn  0.4s ease-in-out; }
+.fade-up  { animation: fadeUp  0.4s ease-in-out; }
+.scale-in { animation: scaleIn 0.4s ease-out; }
+
+@keyframes fadeIn {
+    0%   { opacity: 0; transform: translateY(-10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeUp {
+    0%   { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+    0%   { opacity: 0; transform: scale(0.95); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* Stagger animation delays */
+.stagger-1 { animation: fadeUp 0.5s ease-in-out 0.1s both; }
+.stagger-2 { animation: fadeUp 0.5s ease-in-out 0.2s both; }
+.stagger-3 { animation: fadeUp 0.5s ease-in-out 0.3s both; }

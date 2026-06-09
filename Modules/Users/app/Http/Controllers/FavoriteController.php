@@ -4,53 +4,101 @@ namespace Modules\Users\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Modules\Users\Models\Favorite;
 
 class FavoriteController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Fetch all favorites for the authenticated user.
+     * Structured as: ['data' => ['restaurants' => [...], 'meals' => [...]]]
      */
     public function index()
     {
-        return view('users::index');
+        $favorites = auth()->user()->favorites()->with(['meal', 'restaurant'])->get();
+
+        $restaurants = $favorites->whereNotNull('restaurant_id')->pluck('restaurant')->values();
+        $meals = $favorites->whereNotNull('meal_id')->pluck('meal')->values();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'restaurants' => $restaurants,
+                'meals' => $meals
+            ]
+        ]);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Toggle favorite status for a meal.
      */
-    public function create()
+    public function toggleMeal(Request $request)
     {
-        return view('users::create');
+        $request->validate([
+            'meal_id' => 'required|exists:meals,id'
+        ]);
+
+        $userId = auth()->id();
+        $mealId = $request->meal_id;
+
+        $favorite = Favorite::where('user_id', $userId)
+            ->where('meal_id', $mealId)
+            ->first();
+
+        if ($favorite) {
+            $favorite->delete();
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Meal removed from favorites',
+                'is_favorite' => false
+            ], 200);
+        }
+
+        Favorite::create([
+            'user_id' => $userId,
+            'meal_id' => $mealId
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Meal added to favorites',
+            'is_favorite' => true
+        ], 200);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Toggle favorite status for a restaurant.
      */
-    public function store(Request $request) {}
-
-    /**
-     * Show the specified resource.
-     */
-    public function show($id)
+    public function toggleRestaurant(Request $request)
     {
-        return view('users::show');
+        $request->validate([
+            'restaurant_id' => 'required|exists:restaurants,id'
+        ]);
+
+        $userId = auth()->id();
+        $restaurantId = $request->restaurant_id;
+
+        $favorite = Favorite::where('user_id', $userId)
+            ->where('restaurant_id', $restaurantId)
+            ->first();
+
+        if ($favorite) {
+            $favorite->delete();
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Restaurant removed from favorites',
+                'is_favorite' => false
+            ], 200);
+        }
+
+        Favorite::create([
+            'user_id' => $userId,
+            'restaurant_id' => $restaurantId
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Restaurant added to favorites',
+            'is_favorite' => true
+        ], 200);
     }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
-    {
-        return view('users::edit');
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id) {}
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id) {}
 }

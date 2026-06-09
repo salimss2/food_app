@@ -13,10 +13,105 @@ class Restaurant extends Model
     /**
      * The attributes that are mass assignable.
      */
-    protected $fillable = [];
+    protected $fillable = [
+        'name',
+        'location',
+        'latitude',
+        'longitude',
+        'status',
+        'category',
+        'owner_id',
+        'user_id',
+        'logo',
+        'description',
+        'phone',
+        'account_status',
+        'is_open',
+        'commission_rate',
+        'rating',
+        'rating_count',
+    ];
 
-    // protected static function newFactory(): RestaurantFactory
-    // {
-    //     // return RestaurantFactory::new();
-    // }
+    protected $appends = ['is_open', 'logo_url', 'image_url', 'logo_full_url'];
+
+    public function getLogoAttribute($value)
+    {
+        if (!$value) {
+            return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random';
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        $path = str_contains($value, '/') ? $value : 'restaurants/logos/' . $value;
+        return \Illuminate\Support\Facades\Storage::url($path);
+    }
+
+    public function getImageUrlAttribute()
+    {
+        return $this->image_path ? \Illuminate\Support\Facades\Storage::url($this->image_path) : null;
+    }
+
+    protected function logoFullUrl(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: fn() => $this->logo,
+        );
+    }
+
+    public function getIsOpenAttribute()
+    {
+        return $this->status === 'open';
+    }
+
+    public function owner()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'owner_id');
+    }
+
+    public function getLogoUrlAttribute()
+    {
+        return $this->logo;
+    }
+
+
+    protected $guarded = [];
+
+    public function mealCategories()
+    {
+        return $this->hasMany(MealCategory::class);
+    }
+
+    public function menus()
+    {
+        return $this->hasMany(Menu::class);
+    }
+
+    public function meals()
+    {
+        return $this->hasMany(Meal::class);
+    }
+
+    public function offers()
+    {
+        return $this->hasMany(Offer::class);
+    }
+    public function categories()
+    {
+        return $this->hasMany(MealCategory::class);
+    }
+
+    // Add this to resolve the RelationNotFoundException
+
+    public function meal_categories()
+    {
+        // تأكد من عمل import لمودل MealCategory في أعلى الملف إذا لزم الأمر
+        return $this->hasMany(MealCategory::class, 'restaurant_id');
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(\Modules\Orders\Models\Order::class, 'restaurant_id');
+    }
 }

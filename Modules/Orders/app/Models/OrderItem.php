@@ -5,6 +5,7 @@ namespace Modules\Orders\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 // use Modules\Orders\Database\Factories\OrderItemFactory;
+use Modules\Restaurants\Models\Meal;
 
 class OrderItem extends Model
 {
@@ -13,10 +14,56 @@ class OrderItem extends Model
     /**
      * The attributes that are mass assignable.
      */
-    protected $fillable = [];
+    protected $fillable = [
+        'order_id',
+        'meal_id',
+        'variant_id',
+        'variant_name',
+        'offer_id',
+        'type',
+        'combo_meals',
+        'name',
+        'quantity',
+        'price',
+        'subtotal',
+        'customizations',
+        'special_instructions',
+    ];
 
-    // protected static function newFactory(): OrderItemFactory
-    // {
-    //     // return OrderItemFactory::new();
-    // }
+    protected $casts = [
+        'customizations' => 'array',
+        'combo_meals' => 'array',
+    ];
+
+    /**
+     * العلاقة: عنصر الطلب ينتمي لطلب واحد.
+     */
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * العلاقة: عنصر الطلب ينتمي لوجبة واحدة.
+     */
+    public function meal()
+    {
+        return $this->belongsTo(Meal::class);
+    }
+
+    /**
+     * العلاقة: عنصر الطلب ينتمي لعرض كومبو واحد.
+     */
+    public function offer()
+    {
+        return $this->belongsTo(\Modules\Restaurants\Models\Offer::class);
+    }
+
+    /**
+     * العلاقة: عنصر الطلب ينتمي لمتغير وجبة واحد.
+     */
+    public function variant()
+    {
+        return $this->belongsTo(\Modules\Restaurants\Models\MealVariant::class, 'variant_id');
+    }
 }

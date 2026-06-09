@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 // use Modules\Orders\Database\Factories\CartFactory;
 
+/**
+ * @mixin \Illuminate\Database\Eloquent\Builder
+ */
 class Cart extends Model
 {
     use HasFactory;
@@ -13,7 +16,7 @@ class Cart extends Model
     /**
      * The attributes that are mass assignable.
      */
-    protected $fillable = [];
+    protected $fillable = ['user_id', 'total'];
 
     // protected static function newFactory(): CartFactory
     // {

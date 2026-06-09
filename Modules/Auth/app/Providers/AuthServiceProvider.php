@@ -27,6 +27,10 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerConfig();
         $this->registerViews();
         $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
+        // تحميل Views
+        $this->loadViewsFrom(__DIR__ . '/../Resources/views', 'auth');
+        // تحميل Routes (اختياري، لو تريد وضع Routes هنا)
+        // $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
     }
 
     /**
