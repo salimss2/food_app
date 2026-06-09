@@ -100,13 +100,15 @@
                     </p>
                 </div>
                 <div class="flex space-x-2">
-                    <select id="historyFilter"
-                        class="block w-full rounded-lg border-gray-300 py-2 ps-3 pe-10 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary shadow-sm bg-white"
-                        onchange="renderHistoryTable()">
-                        <option value="All">{{ __('All History') }}</option>
-                        <option value="Completed">{{ __('Completed Only') }}</option>
-                        <option value="Cancelled">{{ __('Cancelled Only') }}</option>
-                    </select>
+                    <form method="GET" action="{{ route('admin.order-history.index') }}" id="historyFilterForm">
+                        <select id="historyFilter" name="status"
+                            class="block w-full rounded-lg border-gray-300 py-2 ps-3 pe-10 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary shadow-sm bg-white"
+                            onchange="this.form.submit()">
+                            <option value="all" {{ request('status', 'all') === 'all' ? 'selected' : '' }}>{{ __('All History') }}</option>
+                            <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>{{ __('Completed Only') }}</option>
+                            <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>{{ __('Cancelled Only') }}</option>
+                        </select>
+                    </form>
                 </div>
             </div>
 
@@ -169,7 +171,7 @@
                                         @endif
                                     </td>
                                     <td class="actions-cell px-6 py-4 whitespace-nowrap text-end text-sm font-medium">
-                                        <button onclick="viewHistoryDetails({{ $order->id }})" title="Trail"
+                                        <a href="{{ route('admin.orders.show', $order->id) }}" title="{{ __('View Details') }}"
                                             class="text-gray-400 hover:text-primary focus:outline-none bg-gray-50 hover:bg-gray-100 p-1.5 rounded transition-colors inline-block">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -178,7 +180,7 @@
                                                     d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
                                                 </path>
                                             </svg>
-                                        </button>
+                                        </a>
                                     </td>
                                 </tr>
                             @empty

@@ -15,9 +15,9 @@ function getCsrfToken() {
     return meta ? meta.getAttribute('content') : '';
 }
 
-// Currency formatting (SAR)
+// Currency formatting (YER)
 function formatCurrency(amount) {
-    return parseFloat(amount).toFixed(2) + " SAR";
+    return parseFloat(amount).toFixed(2) + " YER";
 }
 
 // Date formatting

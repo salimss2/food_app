@@ -20,6 +20,8 @@ class Order extends Model
         'restaurant_id',
         'driver_id',
         'payment_method',
+        'coupon_code',
+        'discount_amount',
         'total',
         'total_price',
         'status',

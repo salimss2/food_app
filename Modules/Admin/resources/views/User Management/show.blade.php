@@ -202,35 +202,7 @@
 
     <script src="{{ asset('modules/admin/js/app.js') }}"></script>
     <script>
-        // Sidebar & Dropdown
-        const sidebar = document.getElementById('sidebar');
-        const sidebarBackdrop = document.getElementById('sidebarBackdrop');
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-        const profileDropdownBtn = document.getElementById('profileDropdownBtn');
-        const profileDropdownMenu = document.getElementById('profileDropdownMenu');
-        if (mobileMenuBtn) {
-            mobileMenuBtn.addEventListener('click', () => {
-                sidebar.classList.remove('-translate-x-full');
-                sidebarBackdrop.classList.remove('hidden');
-            });
-        }
-        if (sidebarBackdrop) {
-            sidebarBackdrop.addEventListener('click', () => {
-                sidebar.classList.add('-translate-x-full');
-                sidebarBackdrop.classList.add('hidden');
-            });
-        }
-        if (profileDropdownBtn) {
-            profileDropdownBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                profileDropdownMenu.classList.toggle('hidden');
-            });
-        }
-        document.addEventListener('click', () => {
-            if (profileDropdownMenu && !profileDropdownMenu.classList.contains('hidden')) {
-                profileDropdownMenu.classList.add('hidden');
-            }
-        });
+        // Profile view custom scripting can go here if needed.
     </script>
 </body>
 </html>

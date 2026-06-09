@@ -36,11 +36,31 @@ class Meal extends Model
         'discount_end' => 'datetime',
     ];
 
-    protected $appends = ['image_url', 'price_after_discount'];
+    protected $appends = ['image_url', 'price_after_discount', 'image_full_url'];
+
+    public function getImageAttribute($value)
+    {
+        if (!$value) {
+            return null;
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        return \Illuminate\Support\Facades\Storage::url($value);
+    }
 
     public function getImageUrlAttribute()
     {
-        return $this->image ? asset('storage/' . $this->image) : asset('assets/default-meal.png');
+        return $this->image;
+    }
+
+    protected function imageFullUrl(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: fn() => $this->image,
+        );
     }
 
     public function getPriceAfterDiscountAttribute()
@@ -78,5 +98,10 @@ class Meal extends Model
         return $this->belongsToMany(Offer::class, 'meal_offer')
             ->withPivot('quantity')
             ->withTimestamps();
+    }
+
+    public function variants(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(MealVariant::class, 'meal_id');
     }
 }

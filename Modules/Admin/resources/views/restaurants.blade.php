@@ -187,7 +187,7 @@
                                         <td class="px-6 py-4">
                                             <div class="flex items-center">
                                                 <img class="res-logo h-10 w-10 rounded-lg border border-gray-200 me-3 object-cover"
-                                                    src="{{ asset('storage/' . (str_contains($restaurant->logo, '/') ? $restaurant->logo : 'restaurants/logos/' . $restaurant->logo)) }}"
+                                                    src="{{ $restaurant->logo }}"
                                                     alt="">
                                                 <div>
                                                     <div class="res-name-text text-sm font-medium text-gray-900">
@@ -439,7 +439,6 @@
                                             <select id="rRole"
                                                 class="mt-1 block w-full rounded border-gray-300 py-1.5 px-2 text-sm shadow-sm focus:ring-primary focus:border-primary">
                                                 <option value="Restaurant Admin">{{ __('Restaurant Admin') }}</option>
-                                                <option value="Admin">{{ __('Admin') }}</option>
                                             </select>
                                         </div>
                                     </div>

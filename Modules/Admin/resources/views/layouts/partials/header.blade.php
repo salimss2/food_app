@@ -35,7 +35,8 @@
                 <button id="notificationsDropdownBtn"
                     class="relative p-2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
                     @if($unreadCount > 0)
-                        <span class="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+                        <span
+                            class="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
                             {{ $unreadCount }}
                         </span>
                     @endif
@@ -50,7 +51,8 @@
                     <div class="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
                         <span class="font-semibold text-xs text-gray-800">{{ __('System Alerts') }}</span>
                         @if($unreadCount > 0)
-                            <a href="{{ route('admin.notifications.inbox.mark-all-read') }}" class="text-[10px] text-indigo-600 hover:text-indigo-800 font-medium">{{ __('Mark all as read') }}</a>
+                            <a href="{{ route('admin.notifications.inbox.mark-all-read') }}"
+                                class="text-[10px] text-indigo-600 hover:text-indigo-800 font-medium">{{ __('Mark all as read') }}</a>
                         @endif
                     </div>
                     <div class="max-h-64 overflow-y-auto divide-y divide-gray-50">
@@ -61,19 +63,22 @@
                                 $title = $notifData['title'] ?? 'Alert';
                                 $body = $notifData['body'] ?? '';
                             @endphp
-                            <a href="{{ route('admin.notifications.inbox.read', $notif->id) }}" class="block px-4 py-3 hover:bg-gray-50 transition-colors">
+                            <a href="{{ route('admin.notifications.inbox.read', $notif->id) }}"
+                                class="block px-4 py-3 hover:bg-gray-50 transition-colors">
                                 <div class="flex justify-between items-start mb-1 gap-2">
-                                    <span class="font-semibold text-[11px] text-gray-900 truncate max-w-[150px]">{{ $title }}</span>
-                                    <span class="text-[9px] text-gray-400 whitespace-nowrap">{{ $notif->created_at->diffForHumans() }}</span>
+                                    <span
+                                        class="font-semibold text-[11px] text-gray-900 truncate max-w-[150px]">{{ $title }}</span>
+                                    <span
+                                        class="text-[9px] text-gray-400 whitespace-nowrap">{{ $notif->created_at->diffForHumans() }}</span>
                                 </div>
                                 <p class="text-[11px] text-gray-500 line-clamp-2 leading-relaxed">{{ $body }}</p>
                                 <div class="mt-1">
                                     <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold 
-                                        @if($source === 'Customer') bg-green-50 text-green-700
-                                        @elseif($source === 'Driver') bg-blue-50 text-blue-700
-                                        @elseif($source === 'Restaurant') bg-orange-50 text-orange-700
-                                        @else bg-gray-50 text-gray-700
-                                        @endif">
+                                            @if($source === 'Customer') bg-green-50 text-green-700
+                                            @elseif($source === 'Driver') bg-blue-50 text-blue-700
+                                            @elseif($source === 'Restaurant') bg-orange-50 text-orange-700
+                                            @else bg-gray-50 text-gray-700
+                                            @endif">
                                         {{ __($source) }}
                                     </span>
                                 </div>
@@ -85,7 +90,8 @@
                         @endforelse
                     </div>
                     <div class="border-t border-gray-100">
-                        <a href="{{ route('admin.notifications.inbox') }}" class="block text-center py-2 text-xs text-indigo-600 hover:text-indigo-800 font-semibold bg-gray-50 hover:bg-gray-100 rounded-b-lg">
+                        <a href="{{ route('admin.notifications.inbox') }}"
+                            class="block text-center py-2 text-xs text-indigo-600 hover:text-indigo-800 font-semibold bg-gray-50 hover:bg-gray-100 rounded-b-lg">
                             {{ __('View All Alerts') }}
                         </a>
                     </div>
@@ -171,7 +177,7 @@
             // Close other dropdowns
             document.getElementById('notificationsDropdownMenu')?.classList.add('hidden-el');
             document.getElementById('profileDropdownMenu')?.classList.add('hidden-el');
-            
+
             menu.classList.toggle('hidden-el', isOpen);
             btn.setAttribute('aria-expanded', String(!isOpen));
         });
@@ -194,7 +200,7 @@
             // Close other dropdowns
             document.getElementById('langDropdownMenu')?.classList.add('hidden-el');
             document.getElementById('profileDropdownMenu')?.classList.add('hidden-el');
-            
+
             menu.classList.toggle('hidden-el', isOpen);
             btn.setAttribute('aria-expanded', String(!isOpen));
         });
@@ -217,7 +223,7 @@
             // Close other dropdowns
             document.getElementById('langDropdownMenu')?.classList.add('hidden-el');
             document.getElementById('notificationsDropdownMenu')?.classList.add('hidden-el');
-            
+
             menu.classList.toggle('hidden-el', isOpen);
             btn.setAttribute('aria-expanded', String(!isOpen));
         });

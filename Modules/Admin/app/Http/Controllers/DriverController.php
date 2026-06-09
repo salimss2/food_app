@@ -65,13 +65,13 @@ class DriverController extends Controller implements HasMiddleware
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'phone' => 'required|string|max:20',
-            'password' => 'required|string|min:8',
+            'password' => 'nullable|string|min:6',
             'status' => 'required|in:Active,Blocked,Inactive',
-            'id_number' => 'nullable|string|max:50',
+            'id_number' => 'required|string|max:50',
             'address' => 'nullable|string|max:255',
-            'vehicle_model' => 'nullable|string|max:100',
-            'vehicle_plate' => 'nullable|string|max:50',
-            'vehicle_vin' => 'nullable|string|max:50',
+            'vehicle_model' => 'required|string|max:255',
+            'vehicle_plate' => 'required|string|max:50',
+            'vehicle_vin' => 'required|string|max:50',
             'is_online' => 'nullable|boolean',
         ]);
 
@@ -80,7 +80,7 @@ class DriverController extends Controller implements HasMiddleware
             'name' => $request->name,
             'email' => $request->email,
             'phone' => $request->phone,
-            'password' => Hash::make($request->password),
+            'password' => Hash::make($request->password ?: \Illuminate\Support\Str::random(12)),
             'status' => $request->status,
         ]);
 
@@ -167,7 +167,13 @@ class DriverController extends Controller implements HasMiddleware
             ->with('driverProfile')
             ->findOrFail($id);
 
-        return view('admin::driver-details', compact('driver'));
+        $recentOrders = $driver->driverOrders()
+            ->with(['restaurant', 'user'])
+            ->latest()
+            ->take(20)
+            ->get();
+
+        return view('admin::driver-details', compact('driver', 'recentOrders'));
     }
 
     /**

@@ -14,16 +14,23 @@ class Category extends Model
         'image',
     ];
 
-    /**
-     * Get the absolute URL for the category image.
-     */
-    public function getImageUrlAttribute()
+    protected $appends = ['image_url'];
+
+    public function getImageAttribute($value)
     {
-        if ($this->image) {
-            return asset('storage/' . $this->image);
+        if (!$value) {
+            return null;
         }
 
-        // Fallback image based on name
-        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random&color=fff&size=128';
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        return \Illuminate\Support\Facades\Storage::url($value);
+    }
+
+    public function getImageUrlAttribute()
+    {
+        return $this->image;
     }
 }

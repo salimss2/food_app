@@ -300,24 +300,6 @@
                                 </p>
                             </div>
 
-                            <div>
-                                <label for="notifType"
-                                    class="block text-sm font-medium text-gray-700">{{ __('Notification Type') }}</label>
-                                <div class="mt-2 flex space-x-6">
-                                    <div class="flex items-center">
-                                        <input id="typePush" name="notifType" type="radio" value="Push" checked
-                                            class="focus:ring-primary h-4 w-4 text-primary border-gray-300">
-                                        <label for="typePush"
-                                            class="ms-2 block text-sm text-gray-700">{{ __('Push Notification') }}</label>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <input id="typeEmail" name="notifType" type="radio" value="Email"
-                                            class="focus:ring-primary h-4 w-4 text-primary border-gray-300">
-                                        <label for="typeEmail"
-                                            class="ms-2 block text-sm text-gray-700">{{ __('Email') }}</label>
-                                    </div>
-                                </div>
-                            </div>
 
                             <div>
                                 <label for="notifMessage"

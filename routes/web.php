@@ -37,3 +37,28 @@ Route::get('/test-reverb', function () {
     event(new TestRealtimeEvent("🔥 Hello from Reverb"));
     return "Event Sent!";
 });
+
+// ── Cloudflare R2 / S3 Storage Redirect for Serverless/Cloud Hosting ────────
+Route::get('storage/{path}', function ($path) {
+    // 1. Clean path and strip any leading 'public/' if present
+    $cleanPath = ltrim($path, '/');
+    $noPublicPath = preg_replace('/^public\//', '', $cleanPath);
+
+    // 2. Determine correct target path based on R2 existence checks
+    $targetPath = $cleanPath;
+    try {
+        if (\Illuminate\Support\Facades\Storage::disk('s3')->exists($cleanPath)) {
+            $targetPath = $cleanPath;
+        } elseif (\Illuminate\Support\Facades\Storage::disk('s3')->exists($noPublicPath)) {
+            $targetPath = $noPublicPath;
+        } elseif (\Illuminate\Support\Facades\Storage::disk('s3')->exists('public/' . $cleanPath)) {
+            $targetPath = 'public/' . $cleanPath;
+        }
+    } catch (\Exception $e) {
+        // Fallback to noPublicPath if S3 connection is offline or has issues
+        $targetPath = $noPublicPath;
+    }
+
+    // 3. Redirect to the public Cloudflare R2 URL
+    return redirect(\Illuminate\Support\Facades\Storage::disk('s3')->url($targetPath));
+})->where('path', '.*');

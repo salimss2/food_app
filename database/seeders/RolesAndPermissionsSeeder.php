@@ -100,11 +100,19 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_complaints'
         ]);
 
-        // 5. تعريف أدوار تطبيقات الجوال (Flutter)
-        // نضعها في الجارد المخصص للـ API (مثلاً sanctum) لتجنب تداخل الجلسات
-        $appRoles = ['Customer', 'Driver', 'Restaurant Admin'];
-        foreach ($appRoles as $roleName) {
-            Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'sanctum']); // أو 'api' حسب حزمة التوثيق عندك
+        // 5. تعريف أدوار تطبيقات الجوال (Flutter) والإنشاء الإداري
+
+        // أ) أدوار يتم إنشاؤها من لوحة التحكم (تتطلب وجودها في الـ web والـ sanctum معاً)
+        $managedRoles = ['Restaurant Admin', 'Driver'];
+        foreach ($managedRoles as $roleName) {
+            // للتعرف عليه أثناء إنشائه من لوحة التحكم (الويب)
+            Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
+
+            // للتعرف عليه أثناء تسجيل دخوله واستخدامه لتطبيق الفلاتر (API)
+            Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'sanctum']);
         }
+
+        // ب) أدوار تسجل بنفسها مباشرة من التطبيق (sanctum فقط)
+        Role::firstOrCreate(['name' => 'Customer', 'guard_name' => 'sanctum']);
     }
 }

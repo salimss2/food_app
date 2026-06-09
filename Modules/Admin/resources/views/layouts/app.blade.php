@@ -72,6 +72,10 @@
         html[dir="rtl"] .actions-cell {
             text-align: left !important;
         }
+
+        .hidden-el, .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -95,6 +99,76 @@
 
     <!-- Script tags -->
     <script src="{{ asset('modules/admin/js/app.js') }}"></script>
+    
+    <!-- Idempotent Global Dropdowns and Sidebar Toggle Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Global Sidebar Toggle
+            document.addEventListener('click', (e) => {
+                const mobileMenuBtn = e.target.closest('#mobileMenuBtn');
+                const sidebarBackdrop = e.target.closest('#sidebarBackdrop');
+                const sidebar = document.getElementById('sidebar');
+                const backdropEl = document.getElementById('sidebarBackdrop');
+
+                if (mobileMenuBtn && sidebar && backdropEl) {
+                    sidebar.classList.remove('-translate-x-full');
+                    backdropEl.classList.remove('hidden-el', 'hidden');
+                } else if ((sidebarBackdrop || !e.target.closest('#sidebar')) && sidebar && backdropEl) {
+                    // Close sidebar only if we click backdrop or click outside the sidebar (not mobile button)
+                    if (!e.target.closest('#mobileMenuBtn')) {
+                        sidebar.classList.add('-translate-x-full');
+                        backdropEl.classList.add('hidden-el', 'hidden');
+                    }
+                }
+            });
+
+            // Global Dropdowns Toggle (Language, Notifications, Profile)
+            document.addEventListener('click', (e) => {
+                const dropdowns = [
+                    { btnId: 'langDropdownBtn', menuId: 'langDropdownMenu' },
+                    { btnId: 'notificationsDropdownBtn', menuId: 'notificationsDropdownMenu' },
+                    { btnId: 'profileDropdownBtn', menuId: 'profileDropdownMenu' }
+                ];
+
+                let clickedDropdown = null;
+
+                for (const d of dropdowns) {
+                    const btn = document.getElementById(d.btnId);
+                    const menu = document.getElementById(d.menuId);
+                    if (!btn || !menu) continue;
+
+                    if (e.target.closest(`#${d.btnId}`)) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        clickedDropdown = d;
+                        
+                        const isCurrentlyHidden = menu.classList.contains('hidden-el') || menu.classList.contains('hidden');
+                        if (isCurrentlyHidden) {
+                            menu.classList.remove('hidden-el', 'hidden');
+                            btn.setAttribute('aria-expanded', 'true');
+                        } else {
+                            menu.classList.add('hidden-el', 'hidden');
+                            btn.setAttribute('aria-expanded', 'false');
+                        }
+                    }
+                }
+
+                // Close all other dropdowns when clicking anywhere else
+                for (const d of dropdowns) {
+                    if (clickedDropdown && clickedDropdown.btnId === d.btnId) continue;
+                    const menu = document.getElementById(d.menuId);
+                    const btn = document.getElementById(d.btnId);
+                    
+                    // Only close if we clicked outside this dropdown's button and menu
+                    if (menu && !e.target.closest(`#${d.menuId}`)) {
+                        menu.classList.add('hidden-el', 'hidden');
+                        if (btn) btn.setAttribute('aria-expanded', 'false');
+                    }
+                }
+            });
+        });
+    </script>
+
     @stack('scripts')
 </body>
 

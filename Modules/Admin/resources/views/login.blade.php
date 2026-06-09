@@ -169,17 +169,12 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between mt-5 mb-8">
+                    <div class="flex items-center justify-start mt-5 mb-8">
                         <div class="flex items-center">
                             <input id="remember_me" name="remember" type="checkbox"
                                 class="h-4 w-4 rounded border-gray-300 text-[#4338ca] focus:ring-[#4338ca] cursor-pointer">
                             <label for="remember_me"
                                 class="ml-2 block text-sm text-gray-700 cursor-pointer">{{ __('Remember me') }}</label>
-                        </div>
-
-                        <div class="text-sm">
-                            <a href="#"
-                                class="font-medium text-[#4338ca] hover:text-[#3730a3] hover:underline transition-colors">{{ __('Forgot password?') }}</a>
                         </div>
                     </div>
 

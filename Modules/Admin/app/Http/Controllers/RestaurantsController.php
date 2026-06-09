@@ -105,8 +105,7 @@ class RestaurantsController extends Controller implements HasMiddleware
                     $file = $request->file('logo');
                     $filename = time() . '_' . $file->getClientOriginalName();
 
-                    // التعديل هنا: حددنا القرص 'public' صراحة لضمان ذهاب الصورة للمكان الصحيح
-                    $file->storeAs('restaurants/logos', $filename, 'public');
+                    $file->storeAs('restaurants/logos', $filename, 's3');
 
                     $logoPath = 'restaurants/logos/' . $filename;
                 }
@@ -315,18 +314,18 @@ class RestaurantsController extends Controller implements HasMiddleware
 
                 // Handle Logo Update
                 if ($request->hasFile('logo')) {
-                    // Delete old logo (حذف الصورة القديمة بشكل صحيح)
+                    // Delete old logo
                     if ($restaurant->logo) {
                         $oldLogoPath = str_contains($restaurant->logo, '/') ? $restaurant->logo : 'restaurants/logos/' . $restaurant->logo;
-                        // استخدام قرص public للحذف
-                        \Illuminate\Support\Facades\Storage::disk('public')->delete($oldLogoPath);
+                        if ($oldLogoPath) {
+                            \Illuminate\Support\Facades\Storage::disk('s3')->delete($oldLogoPath);
+                        }
                     }
 
                     $file = $request->file('logo');
                     $filename = time() . '_' . $file->getClientOriginalName();
 
-                    // التخزين في المسار الصحيح
-                    $file->storeAs('restaurants/logos', $filename, 'public');
+                    $file->storeAs('restaurants/logos', $filename, 's3');
 
                     // إسناد المسار الجديد للمطعم
                     $restaurant->logo = 'restaurants/logos/' . $filename;
@@ -372,7 +371,7 @@ class RestaurantsController extends Controller implements HasMiddleware
             DB::transaction(function () use ($restaurant, $user) {
                 // Delete logo file
                 if ($restaurant->logo) {
-                    Storage::delete('public/restaurants/logos/' . $restaurant->logo);
+                    Storage::disk('s3')->delete($restaurant->logo);
                 }
 
                 $restaurant->delete();
@@ -485,7 +484,7 @@ class RestaurantsController extends Controller implements HasMiddleware
                 if ($request->hasFile('image')) {
                     $file = $request->file('image');
                     $filename = time() . '_' . $file->getClientOriginalName();
-                    $file->storeAs('meals', $filename, 'public');
+                    $file->storeAs('meals', $filename, 's3');
                     $meal->update(['image' => 'meals/' . $filename]);
                 }
 
@@ -517,7 +516,7 @@ class RestaurantsController extends Controller implements HasMiddleware
                 if ($request->hasFile('image')) {
                     $file = $request->file('image');
                     $filename = time() . '_' . $file->getClientOriginalName();
-                    $file->storeAs('categories', $filename, 'public');
+                    $file->storeAs('categories', $filename, 's3');
                     $category->update(['image' => 'categories/' . $filename]);
                 }
 
@@ -555,7 +554,7 @@ class RestaurantsController extends Controller implements HasMiddleware
                 if ($request->hasFile('image')) {
                     // Delete old image if exists
                     if ($meal->image) {
-                        \Illuminate\Support\Facades\Storage::disk('public')->delete($meal->image);
+                        \Illuminate\Support\Facades\Storage::disk('s3')->delete($meal->image);
                     }
                     $file = $request->file('image');
                     $filename = time() . '_' . $file->getClientOriginalName();
@@ -580,7 +579,7 @@ class RestaurantsController extends Controller implements HasMiddleware
         try {
             DB::transaction(function () use ($meal) {
                 if ($meal->image) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($meal->image);
+                    \Illuminate\Support\Facades\Storage::disk('s3')->delete($meal->image);
                 }
                 $meal->delete();
             });

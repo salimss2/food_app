@@ -137,9 +137,9 @@ function fixCurrency(num) {
     const val = parseFloat(num);
     const formatted = Math.abs(val).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
     if (val < 0) {
-        return `(${formatted} SAR)`;
+        return `(${formatted} YER)`;
     }
-    return `${formatted} SAR`;
+    return `${formatted} YER`;
 }
 
 /**
@@ -198,9 +198,9 @@ async function viewBreakdown(index) {
                         <td class="px-4 py-3 text-center text-sm text-gray-600">${orderDate}</td>
                         <td class="px-4 py-3 text-center text-sm font-medium text-gray-900">${order.payment_method.toUpperCase()}</td>
                         <td class="px-4 py-3 text-center text-sm text-gray-600">${parseFloat(distanceVal).toFixed(2)} km</td>
-                        <td class="px-4 py-3 text-right text-sm font-medium text-gray-600">${parseFloat(order.delivery_fee).toFixed(2)} SAR</td>
-                        <td class="px-4 py-3 text-right text-sm font-medium text-red-600">${parseFloat(order.platform_commission).toFixed(2)} SAR</td>
-                        <td class="px-4 py-3 text-right text-sm font-bold text-green-600">${parseFloat(order.driver_commission).toFixed(2)} SAR</td>
+                        <td class="px-4 py-3 text-right text-sm font-medium text-gray-600">${parseFloat(order.delivery_fee).toFixed(2)} YER</td>
+                        <td class="px-4 py-3 text-right text-sm font-medium text-red-600">${parseFloat(order.platform_commission).toFixed(2)} YER</td>
+                        <td class="px-4 py-3 text-right text-sm font-bold text-green-600">${parseFloat(order.driver_commission).toFixed(2)} YER</td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -312,9 +312,9 @@ async function viewReceipt(settlementId, settlementNumber) {
                     <td class="px-4 py-3 text-center text-sm text-gray-600">${orderDate}</td>
                     <td class="px-4 py-3 text-center text-sm font-medium text-gray-900">${order.payment_method.toUpperCase()}</td>
                     <td class="px-4 py-3 text-center text-sm text-gray-600">${parseFloat(distanceVal).toFixed(2)} km</td>
-                    <td class="px-4 py-3 text-right text-sm font-medium text-gray-600">${parseFloat(order.delivery_fee).toFixed(2)} SAR</td>
-                    <td class="px-4 py-3 text-right text-sm font-medium text-red-600">${parseFloat(order.platform_commission).toFixed(2)} SAR</td>
-                    <td class="px-4 py-3 text-right text-sm font-bold text-green-600">${parseFloat(order.driver_commission).toFixed(2)} SAR</td>
+                    <td class="px-4 py-3 text-right text-sm font-medium text-gray-600">${parseFloat(order.delivery_fee).toFixed(2)} YER</td>
+                    <td class="px-4 py-3 text-right text-sm font-medium text-red-600">${parseFloat(order.platform_commission).toFixed(2)} YER</td>
+                    <td class="px-4 py-3 text-right text-sm font-bold text-green-600">${parseFloat(order.driver_commission).toFixed(2)} YER</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -370,8 +370,8 @@ function renderTable() {
                 ${d.name}
             </td>
             <td class="px-6 py-4 text-center font-medium text-gray-600">${d.deliveries}</td>
-            <td class="px-6 py-4 text-right font-medium text-gray-900">${d.driverEarnings.toFixed(2)} SAR</td>
-            <td class="px-6 py-4 text-right font-medium text-orange-600">${d.cashInHand.toFixed(2)} SAR</td>
+            <td class="px-6 py-4 text-right font-medium text-gray-900">${d.driverEarnings.toFixed(2)} YER</td>
+            <td class="px-6 py-4 text-right font-medium text-orange-600">${d.cashInHand.toFixed(2)} YER</td>
             <td class="px-6 py-4 text-right font-bold ${balanceColor}">${fixCurrency(d.netBalance)}</td>
             <td class="px-6 py-4 text-right whitespace-nowrap">
                 <div class="flex flex-col space-y-1 items-end">
@@ -418,8 +418,8 @@ function renderArchiveTable() {
             <td class="px-6 py-4 font-bold text-gray-900">${s.settlement_number}</td>
             <td class="px-6 py-4 font-medium text-gray-600">${dateStr}</td>
             <td class="px-6 py-4 font-semibold text-gray-900">${s.driver_name}</td>
-            <td class="px-6 py-4 text-right font-medium text-gray-600">${s.total_earnings.toFixed(2)} SAR</td>
-            <td class="px-6 py-4 text-right font-medium text-orange-600">${s.total_cash.toFixed(2)} SAR</td>
+            <td class="px-6 py-4 text-right font-medium text-gray-600">${s.total_earnings.toFixed(2)} YER</td>
+            <td class="px-6 py-4 text-right font-medium text-orange-600">${s.total_cash.toFixed(2)} YER</td>
             <td class="px-6 py-4 text-right font-bold ${netColor}">${fixCurrency(s.net_amount)}</td>
             <td class="px-6 py-4 text-gray-700 font-semibold">${s.admin_name}</td>
             <td class="px-6 py-4 text-right whitespace-nowrap">

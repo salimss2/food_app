@@ -19,9 +19,22 @@ class Offer extends Model
 
     protected $appends = ['image_url'];
 
+    public function getImageAttribute($value)
+    {
+        if (!$value) {
+            return asset('assets/default-offer.png');
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        return \Illuminate\Support\Facades\Storage::url($value);
+    }
+
     public function getImageUrlAttribute()
     {
-        return $this->image ? asset('storage/' . $this->image) : asset('assets/default-offer.png');
+        return $this->image;
     }
 
     public function meals(): \Illuminate\Database\Eloquent\Relations\BelongsToMany

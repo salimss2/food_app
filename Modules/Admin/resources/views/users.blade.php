@@ -193,8 +193,6 @@
                                 class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors {{ request('tab', 'Active') === 'Active' ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50' }}">{{ __('Active') }}</a>
                             <a href="{{ request()->fullUrlWithQuery(['tab' => 'Blocked']) }}"
                                 class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors {{ request('tab') === 'Blocked' ? 'bg-white shadow-sm text-red-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50' }}">{{ __('Blocked') }}</a>
-                            <a href="{{ request()->fullUrlWithQuery(['tab' => 'Archived']) }}"
-                                class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors {{ request('tab') === 'Archived' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50' }}">{{ __('Archived') }}</a>
                         </div>
 
                         <!-- Role Filter -->
@@ -400,7 +398,8 @@
                                             <label
                                                 class="block text-sm font-medium text-gray-700">{{ __('Role') }}</label>
                                             <select id="userRole" name="role"
-                                                class="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm">
+                                                class="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                                                required>
                                                 @foreach($roles as $role)
                                                     <option value="{{ $role->name }}">{{ $role->name }}</option>
                                                 @endforeach
@@ -552,9 +551,8 @@
                     </div>
 
                     {{-- Footer --}}
-                    <div class="px-6 py-4 bg-gray-50 flex items-center justify-between border-t border-gray-100">
-                        <a id="view_profile_link" href="#"
-                            class="text-sm text-primary hover:underline font-medium">{{ __('View Full Profile') }} →</a>
+                    <div class="px-6 py-4 bg-gray-50 flex items-center justify-end border-t border-gray-100">
+                        <a id="view_profile_link" href="#" class="hidden"></a>
                         <button onclick="closeModal('viewUserModal')"
                             class="inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">{{ __('Close') }}</button>
                     </div>
@@ -589,7 +587,7 @@
                     @if(old('phone')) document.getElementById('userPhone').value = @json(old('phone')); @endif
                     @if(old('role')) document.getElementById('userRole').value = @json(old('role')); @endif
                     @if(old('status')) document.getElementById('userStatus').value = @json(old('status')); @endif
-                            }
+                                    }
             });
         </script>
     @endif

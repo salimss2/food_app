@@ -264,15 +264,47 @@ class OrdersController extends Controller
         $request->validate([
             'payment_method' => ['nullable', 'string'],
             'scheduled_at' => ['nullable', 'date'],
+            'coupon_code' => ['nullable', 'string'],
             'offer_id' => ['nullable', 'integer', 'exists:offers,id'],
             'quantity' => ['nullable', 'integer', 'min:1'],
             'items' => ['nullable', 'array', 'min:1'],
             'items.*.meal_id' => ['required_without:items.*.offer_id', 'nullable', 'integer', 'exists:meals,id'],
             'items.*.offer_id' => ['required_without:items.*.meal_id', 'nullable', 'integer', 'exists:offers,id'],
+            'items.*.variant_id' => ['nullable', 'integer', 'exists:meal_variants,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
         ]);
 
         $scheduledAt = $request->input('scheduled_at');
+
+        // --- [إضافة جديدة] التحقق من كود الخصم والجدولة ---
+        $couponCode = $request->input('coupon_code');
+        $coupon = null;
+
+        if ($couponCode) {
+            if ($request->filled('scheduled_at')) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'عذراً، لا يمكن استخدام كود الخصم مع الطلبات المجدولة'
+                ], 422);
+            }
+
+            $coupon = \Modules\Orders\Models\Coupon::where('code', $couponCode)->first();
+
+            if (!$coupon || !$coupon->status) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'كود الخصم غير صحيح أو غير مفعل'
+                ], 422);
+            }
+
+            $today = \Carbon\Carbon::today();
+            if ($coupon->expires_at && $today->greaterThan(\Carbon\Carbon::parse($coupon->expires_at)->startOfDay())) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'عذراً، انتهت صلاحية هذا الكود'
+                ], 422);
+            }
+        }
 
         Log::info("Checkout request received", [
             'user_id' => $user->id,
@@ -341,22 +373,44 @@ class OrdersController extends Controller
                         ], 422);
                     }
 
+                    // --- Variant Customization Logic ---
+                    $variant = null;
+                    $variantName = null;
+                    $variantId = null;
+                    if (!empty($itemData['variant_id'])) {
+                        $variant = \Modules\Restaurants\Models\MealVariant::where('id', $itemData['variant_id'])
+                            ->where('meal_id', $meal->id)
+                            ->where('is_active', true)
+                            ->first();
+
+                        if (!$variant) {
+                            return response()->json([
+                                'status' => false,
+                                'message' => "المتغير المطلوب للوجبة {$meal->name} غير متوفر أو غير نشط"
+                            ], 422);
+                        }
+
+                        $variantId = $variant->id;
+                        $variantName = $variant->name;
+                    }
+
                     $now = now();
                     $hasActiveDiscount = $meal->discount_type &&
                         $meal->discount_value !== null &&
                         ($meal->discount_start === null || $now >= $meal->discount_start) &&
                         ($meal->discount_end === null || $now <= $meal->discount_end);
 
-                    $price = (float) $meal->price;
+                    $basePrice = $variant ? (float) $variant->price : (float) $meal->price;
+                    $price = $basePrice;
                     $type = 'regular_meal';
 
                     if ($hasActiveDiscount) {
                         $type = 'discounted_meal';
                         if ($meal->discount_type === 'percentage') {
-                            $discountAmount = ($meal->price * $meal->discount_value) / 100;
-                            $price = max(0, (float) ($meal->price - $discountAmount));
+                            $discountAmount = ($basePrice * $meal->discount_value) / 100;
+                            $price = max(0, (float) ($basePrice - $discountAmount));
                         } elseif ($meal->discount_type === 'fixed') {
-                            $price = max(0, (float) ($meal->price - $meal->discount_value));
+                            $price = max(0, (float) ($basePrice - $meal->discount_value));
                         }
                     }
 
@@ -364,9 +418,11 @@ class OrdersController extends Controller
 
                     $processedItems->push((object) [
                         'meal_id' => $meal->id,
+                        'variant_id' => $variantId,
+                        'variant_name' => $variantName,
                         'offer_id' => null,
                         'restaurant_id' => $meal->restaurant_id,
-                        'name' => $meal->name,
+                        'name' => $variantName ? "{$meal->name} ({$variantName})" : $meal->name,
                         'type' => $type,
                         'quantity' => $quantity,
                         'price' => $price,
@@ -468,6 +524,8 @@ class OrdersController extends Controller
 
                     return (object) [
                         'meal_id' => $meal->id,
+                        'variant_id' => null,
+                        'variant_name' => null,
                         'offer_id' => null,
                         'name' => $meal->name,
                         'type' => $type,
@@ -497,6 +555,8 @@ class OrdersController extends Controller
                     $itemsSnapshot = $restaurantItems->map(function ($item) {
                         return [
                             'meal_id' => $item->meal_id,
+                            'variant_id' => $item->variant_id ?? null,
+                            'variant_name' => $item->variant_name ?? null,
                             'offer_id' => $item->offer_id,
                             'name' => $item->name,
                             'type' => $item->type,
@@ -603,9 +663,30 @@ class OrdersController extends Controller
         // =====================================================================
         // CASE B: طلب فوري (Immediate Order)
         // =====================================================================
+
+        // Calculate the overall cart subtotal across all restaurants/items
+        $cartSubtotal = 0.00;
+        foreach ($groupedItems as $restaurantId => $restaurantItems) {
+            $cartSubtotal += $restaurantItems->sum('subtotal');
+        }
+
+        $totalDiscount = 0.00;
+        if ($coupon) {
+            if ($coupon->type === 'percent') {
+                $totalDiscount = ($cartSubtotal * (float) $coupon->discount) / 100;
+            } elseif ($coupon->type === 'fixed') {
+                $totalDiscount = (float) $coupon->discount;
+            }
+
+            // Cap total discount at cart subtotal
+            if ($totalDiscount > $cartSubtotal) {
+                $totalDiscount = $cartSubtotal;
+            }
+        }
+
         $groupId = Str::uuid()->toString();
 
-        $createdOrders = DB::transaction(function () use ($user, $cart, $groupedItems, $paymentMethod, $groupId, $receiptPath, $latitude, $longitude) {
+        $createdOrders = DB::transaction(function () use ($user, $cart, $groupedItems, $paymentMethod, $groupId, $receiptPath, $latitude, $longitude, $coupon, $totalDiscount, $cartSubtotal) {
             $orders = [];
 
             foreach ($groupedItems as $restaurantId => $restaurantItems) {
@@ -670,6 +751,15 @@ class OrdersController extends Controller
                     Log::warning("Missing coordinates for distance calculation", ['restaurant' => $restaurantId]);
                 }
 
+                $orderDiscount = 0.00;
+                if ($totalDiscount > 0 && $cartSubtotal > 0) {
+                    // Proportionally distribute the discount
+                    $orderDiscount = ($restaurantTotal / $cartSubtotal) * $totalDiscount;
+                    $orderDiscount = round($orderDiscount, 2);
+                }
+
+                $finalTotal = max(0.00, $restaurantTotal - $orderDiscount);
+
                 // أ. إنشاء سجل الطلب الفرعي للمطعم
                 /** @var Order $order */
                 $order = Order::create([
@@ -679,8 +769,10 @@ class OrdersController extends Controller
                     'restaurant_id' => $restaurantId,
                     'driver_id' => null,
                     'payment_method' => $paymentMethod,
-                    'total' => $restaurantTotal,
-                    'total_price' => $restaurantTotal,
+                    'coupon_code' => $coupon ? $coupon->code : null,
+                    'discount_amount' => $orderDiscount,
+                    'total' => $finalTotal,
+                    'total_price' => $finalTotal,
                     'status' => $status,
                     'payment_status' => $paymentStatus,
                     'receipt_image' => $receiptPath,
@@ -697,6 +789,8 @@ class OrdersController extends Controller
                     OrderItem::create([
                         'order_id' => $order->id,
                         'meal_id' => $item->meal_id,
+                        'variant_id' => $item->variant_id ?? null,
+                        'variant_name' => $item->variant_name ?? null,
                         'offer_id' => $item->offer_id,
                         'type' => $item->type,
                         'combo_meals' => $item->combo_meals,
@@ -941,5 +1035,105 @@ class OrdersController extends Controller
                 'customer_lng' => (float) ($order->longitude ?? ($order->user->profile->longitude ?? 0)),
             ]
         ]);
+    }
+
+    /**
+     * Add a review/rating for an order.
+     */
+    public function review(Request $request, $id)
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        // 1. Validate payload
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'meals_rating' => 'required|integer|min:1|max:5',
+            'driver_rating' => 'nullable|integer|min:1|max:5',
+            'restaurant_rating' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // 2. Fetch the order and ensure ownership & correct status
+        $order = Order::where('id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$order) {
+            return response()->json([
+                'status' => false,
+                'message' => 'الطلب غير موجود أو غير مصرح لك بتقييمه'
+            ], 404);
+        }
+
+        if (strtolower($order->status) !== 'delivered') {
+            return response()->json([
+                'status' => false,
+                'message' => 'يمكنك تقييم الطلبات فقط بعد اكتمال التوصيل (delivered)'
+            ], 422);
+        }
+
+        // 3. Prevent duplicate reviews
+        $exists = \Modules\Orders\Models\OrderReview::where('order_id', $order->id)->exists();
+        if ($exists) {
+            return response()->json([
+                'status' => false,
+                'message' => 'لقد قمت بتقييم هذا الطلب مسبقاً'
+            ], 422);
+        }
+
+        // 4. Save review inside a transaction and update aggregates
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($order, $request, $user) {
+            $review = \Modules\Orders\Models\OrderReview::create([
+                'order_id' => $order->id,
+                'user_id' => $user->id,
+                'restaurant_id' => $order->restaurant_id,
+                'driver_id' => $order->driver_id,
+                'meals_rating' => $request->meals_rating,
+                'driver_rating' => $order->driver_id ? $request->driver_rating : null,
+                'restaurant_rating' => $request->restaurant_rating,
+                'comment' => $request->comment,
+            ]);
+
+            // Dynamically calculate and update Restaurant average rating and count
+            $restaurantReviews = \Modules\Orders\Models\OrderReview::where('restaurant_id', $order->restaurant_id);
+            $restaurantRatingAvg = round($restaurantReviews->avg('restaurant_rating'), 2);
+            $restaurantRatingCount = $restaurantReviews->count();
+
+            $restaurant = \Modules\Restaurants\Models\Restaurant::find($order->restaurant_id);
+            if ($restaurant) {
+                $restaurant->update([
+                    'rating' => $restaurantRatingAvg,
+                    'rating_count' => $restaurantRatingCount,
+                ]);
+            }
+
+            // Dynamically calculate and update Driver average rating and count
+            if ($order->driver_id) {
+                $driverReviews = \Modules\Orders\Models\OrderReview::where('driver_id', $order->driver_id)
+                    ->whereNotNull('driver_rating');
+                $driverRatingAvg = round($driverReviews->avg('driver_rating'), 2);
+                $driverRatingCount = $driverReviews->count();
+
+                $driverProfile = \Modules\Auth\Models\DriverProfile::where('user_id', $order->driver_id)->first();
+                if ($driverProfile) {
+                    $driverProfile->update([
+                        'rating' => $driverRatingAvg,
+                        'rating_count' => $driverRatingCount,
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'تم حفظ التقييم بنجاح، شكراً لك!',
+                'data' => $review
+            ], 201);
+        });
     }
 }

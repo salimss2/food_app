@@ -29,7 +29,7 @@ class MealController extends Controller
             $query->where('meal_category_id', $request->category_id);
         }
 
-        $meals = $query->with('category')->latest()->get();
+        $meals = $query->with(['category', 'variants'])->latest()->get();
 
         ob_clean();
         return response()->json([
@@ -55,7 +55,8 @@ class MealController extends Controller
             'price' => 'required|numeric|min:0',
             'discount_price' => 'nullable|numeric|min:0',
             'meal_category_id' => 'required|exists:meal_categories,id',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -67,12 +68,13 @@ class MealController extends Controller
         $mealData['restaurant_id'] = $user->restaurant->id;
         $mealData['available'] = true;
 
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
+        $file = $request->file('image') ?? $request->file('logo');
+        if ($file) {
+            $disk = config('filesystems.default') ?: 's3';
             $filename = time() . '_' . $file->getClientOriginalName();
 
-            // Store in the meals directory within the public disk
-            $file->storeAs('restaurants/meals', $filename, 'public');
+            // Store in the meals directory within the Cloud disk
+            $file->storeAs('restaurants/meals', $filename, $disk);
 
             // Save the full path to the database
             $mealData['image'] = 'restaurants/meals/' . $filename;
@@ -102,7 +104,8 @@ class MealController extends Controller
             'price' => 'required|numeric|min:0',
             'discount_price' => 'nullable|numeric|min:0',
             'meal_category_id' => 'required|exists:meal_categories,id',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -112,17 +115,18 @@ class MealController extends Controller
 
         $mealData = $request->only(['name', 'description', 'price', 'discount_price', 'meal_category_id']);
 
-        if ($request->hasFile('image')) {
+        $file = $request->file('image') ?? $request->file('logo');
+        if ($file) {
+            $disk = config('filesystems.default') ?: 's3';
             // Delete the old image if it exists
             if ($meal->image) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($meal->image);
+                \Illuminate\Support\Facades\Storage::disk($disk)->delete($meal->image);
             }
 
-            $file = $request->file('image');
             $filename = time() . '_' . $file->getClientOriginalName();
 
             // Store the new image
-            $file->storeAs('restaurants/meals', $filename, 'public');
+            $file->storeAs('restaurants/meals', $filename, $disk);
 
             // Update the path in the database
             $mealData['image'] = 'restaurants/meals/' . $filename;
@@ -165,8 +169,9 @@ class MealController extends Controller
         $user = Auth::user();
         $meal = Meal::where('restaurant_id', $user->restaurant->id)->findOrFail($id);
 
-        if ($meal->image && Storage::disk('public')->exists($meal->image)) {
-            Storage::disk('public')->delete($meal->image);
+        $disk = config('filesystems.default') ?: 's3';
+        if ($meal->image && Storage::disk($disk)->exists($meal->image)) {
+            Storage::disk($disk)->delete($meal->image);
         }
 
         $meal->delete();

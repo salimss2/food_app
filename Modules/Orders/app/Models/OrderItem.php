@@ -17,6 +17,8 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id',
         'meal_id',
+        'variant_id',
+        'variant_name',
         'offer_id',
         'type',
         'combo_meals',
@@ -55,5 +57,13 @@ class OrderItem extends Model
     public function offer()
     {
         return $this->belongsTo(\Modules\Restaurants\Models\Offer::class);
+    }
+
+    /**
+     * العلاقة: عنصر الطلب ينتمي لمتغير وجبة واحد.
+     */
+    public function variant()
+    {
+        return $this->belongsTo(\Modules\Restaurants\Models\MealVariant::class, 'variant_id');
     }
 }

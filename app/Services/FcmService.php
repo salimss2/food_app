@@ -9,18 +9,41 @@ use Illuminate\Support\Facades\Log;
 class FcmService
 {
     protected $projectId;
-    protected $credentialsPath;
+    protected $credentials = null;
 
     public function __construct()
     {
-        $this->credentialsPath = storage_path('app/firebase-credentials.json');
+        $this->loadCredentials();
+        $this->projectId = $this->credentials['project_id'] ?? config('services.fcm.project_id');
+    }
 
-        // Try to get project_id from JSON first, fallback to config
-        if (file_exists($this->credentialsPath)) {
-            $creds = json_decode(file_get_contents($this->credentialsPath), true);
-            $this->projectId = $creds['project_id'] ?? config('services.fcm.project_id');
-        } else {
-            $this->projectId = config('services.fcm.project_id');
+    /**
+     * Load Firebase credentials from Cloudflare R2 / S3 storage (firebase_s3) or local fallback.
+     */
+    protected function loadCredentials()
+    {
+        // 1. Try to fetch from 'firebase_s3' Cloudflare R2 / S3 disk
+        try {
+            if (\Illuminate\Support\Facades\Storage::disk('firebase_s3')->exists('firebase-credentials.json')) {
+                $content = \Illuminate\Support\Facades\Storage::disk('firebase_s3')->get('firebase-credentials.json');
+                $decoded = json_decode($content, true);
+                if (is_array($decoded)) {
+                    $this->credentials = $decoded;
+                    return;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to load Firebase credentials from cloud disk: ' . $e->getMessage());
+        }
+
+        // 2. Fallback to local storage path (e.g. for local development)
+        $localPath = storage_path('app/firebase-credentials.json');
+        if (file_exists($localPath)) {
+            $content = file_get_contents($localPath);
+            $decoded = json_decode($content, true);
+            if (is_array($decoded)) {
+                $this->credentials = $decoded;
+            }
         }
     }
 
@@ -30,12 +53,12 @@ class FcmService
     protected function getAccessToken()
     {
         return Cache::remember('fcm_access_token', 3500, function () {
-            if (!file_exists($this->credentialsPath)) {
-                Log::error('FCM credentials file not found at: ' . $this->credentialsPath);
+            if (!$this->credentials) {
+                Log::error('FCM credentials not loaded from cloud or local storage.');
                 return null;
             }
 
-            $credentials = json_decode(file_get_contents($this->credentialsPath), true);
+            $credentials = $this->credentials;
             $now = time();
 
             $header = base64UrlEncode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));

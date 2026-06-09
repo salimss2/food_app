@@ -25,9 +25,9 @@ class RestaurantResource extends JsonResource
             'status' => $this->status,
             'is_open' => $this->status === 'open',
             'category' => $this->category,
-            'logo' => $this->logo
-                ? asset('storage/' . $this->logo)
-                : 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random',
+            'logo' => $this->logo,
+            'logo_url' => $this->logo,
+            'logo_full_url' => $this->logo_full_url,
             'description' => $this->description,
             'phone' => $this->phone,
             'meal_categories' => CategoryResource::collection($this->whenLoaded('mealCategories')),

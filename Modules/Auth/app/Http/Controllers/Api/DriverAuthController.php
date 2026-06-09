@@ -35,6 +35,26 @@ class DriverAuthController extends Controller
             ], 401);
         }
 
+        // فحص حالة الحظر
+        if ($user->status !== 'active') {
+            return response()->json([
+                'status' => false,
+                'message' => 'تم حظر حسابك. يرجى التواصل مع الإدارة.'
+            ], 403);
+        }
+
+        // فحص الصلاحية والدور المخصص للسائق بشكل صارم جداً
+        $isDriver = $user->hasRole('Driver') || $user->hasRole('driver');
+        if (!$isDriver) {
+            $user->tokens()->delete();
+            \Illuminate\Support\Facades\Auth::logout();
+
+            return response()->json([
+                'status' => false,
+                'message' => 'غير مصرح لك بالدخول. هذا التطبيق مخصص للمناديب/السائقين فقط.'
+            ], 403);
+        }
+
         // Update FCM token if provided
         if ($request->has('fcm_token')) {
             $user->update(['fcm_token' => $request->fcm_token]);
@@ -67,13 +87,14 @@ class DriverAuthController extends Controller
 
             // حذف الصورة القديمة
             if ($profile->avatar_url) {
-                $oldPath = str_replace(asset('storage/'), '', $profile->avatar_url);
-                Storage::disk('public')->delete($oldPath);
+                $oldPath = str_replace([asset('storage/'), \Illuminate\Support\Facades\Storage::url('')], '', $profile->avatar_url);
+                $oldPath = ltrim($oldPath, '/');
+                Storage::disk('s3')->delete($oldPath);
             }
 
             // تخزين الصورة الجديدة
-            $path = $request->file('avatar')->store('avatars', 'public');
-            $fullUrl = asset('storage/' . $path);
+            $path = $request->file('avatar')->store('avatars', 's3');
+            $fullUrl = \Illuminate\Support\Facades\Storage::url($path);
 
             // تحديث البروفايل
             $profile->update(['avatar_url' => $fullUrl]);
@@ -143,11 +164,12 @@ class DriverAuthController extends Controller
 
             if ($request->hasFile('avatar')) {
                 if ($profile->avatar_url) {
-                    $oldPath = str_replace(asset('storage/'), '', $profile->avatar_url);
-                    Storage::disk('public')->delete($oldPath);
+                    $oldPath = str_replace([asset('storage/'), \Illuminate\Support\Facades\Storage::url('')], '', $profile->avatar_url);
+                    $oldPath = ltrim($oldPath, '/');
+                    Storage::disk('s3')->delete($oldPath);
                 }
-                $path = $request->file('avatar')->store('avatars', 'public');
-                $profile->avatar_url = asset('storage/' . $path);
+                $path = $request->file('avatar')->store('avatars', 's3');
+                $profile->avatar_url = \Illuminate\Support\Facades\Storage::url($path);
             }
 
             if ($request->has('address')) {

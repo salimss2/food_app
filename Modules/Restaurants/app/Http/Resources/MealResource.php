@@ -25,13 +25,16 @@ class MealResource extends JsonResource
             'discount_start' => $this->discount_start ? $this->discount_start->toISOString() : null,
             'discount_end' => $this->discount_end ? $this->discount_end->toISOString() : null,
             'price_after_discount' => (float) $this->price_after_discount,
+            'image' => $this->image,
             // Absolute URL so Flutter can display directly with Image.network
-            'image_url' => $this->image ? asset('storage/' . $this->image) : null,
+            'image_url' => $this->image,
+            'image_full_url' => $this->image_full_url,
             'available' => (bool) $this->available,
             'is_available' => (bool) $this->available,
             'restaurant_id' => $this->restaurant_id,
             'meal_category_id' => $this->meal_category_id,
             'category' => new CategoryResource($this->whenLoaded('category')),
+            'variants' => MealVariantResource::collection($this->whenLoaded('variants')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

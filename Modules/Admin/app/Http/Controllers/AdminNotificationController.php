@@ -66,11 +66,11 @@ class AdminNotificationController extends Controller
 
         if (!$scheduledAt) {
             // Dispatch immediately in background
-            SendAdminBroadcastJob::dispatch($notification);
+            SendAdminBroadcastJob::dispatch($notification, auth()->id());
         } else {
             // Dispatch with delay
             $delay = now()->diffInSeconds($scheduledAt);
-            SendAdminBroadcastJob::dispatch($notification)->delay($delay);
+            SendAdminBroadcastJob::dispatch($notification, auth()->id())->delay($delay);
         }
 
         return redirect()->back()->with('success', 'Notification processed successfully.');

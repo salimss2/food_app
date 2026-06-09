@@ -13,7 +13,7 @@ use Modules\Restaurants\Http\Controllers\Api\RestaurantCategoryController;
 
 Route::prefix('v1')->group(function () {
     Route::get('/app-categories', function () {
-        $categories = \Illuminate\Support\Facades\DB::table('categories')->get();
+        $categories = \Modules\Restaurants\Models\Category::all();
         return response()->json([
             'status' => true,
             'data' => $categories

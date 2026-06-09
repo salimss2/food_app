@@ -203,10 +203,10 @@
                                 <tr>
                                     <th scope="col" class="px-6 py-4">{{ __('Min Distance (Km)') }} / من (كم)</th>
                                     <th scope="col" class="px-6 py-4">{{ __('Max Distance (Km)') }} / إلى (كم)</th>
-                                    <th scope="col" class="px-6 py-4">{{ __('Total Delivery Fee ($)') }} / إجمالي الرسوم
+                                    <th scope="col" class="px-6 py-4">{{ __('Total Delivery Fee (YER)') }} / إجمالي الرسوم
                                     </th>
-                                    <th scope="col" class="px-6 py-4">{{ __('Driver Share ($)') }} / حصة الموصل</th>
-                                    <th scope="col" class="px-6 py-4">{{ __('Platform Share ($)') }} / حصة المنصة</th>
+                                    <th scope="col" class="px-6 py-4">{{ __('Driver Share (YER)') }} / حصة الموصل</th>
+                                    <th scope="col" class="px-6 py-4">{{ __('Platform Share (YER)') }} / حصة المنصة</th>
                                     <th scope="col" class="px-6 py-4 text-right">{{ __('Actions') }}</th>
                                 </tr>
                             </thead>
@@ -216,12 +216,12 @@
                                         <td class="px-6 py-4 font-medium text-gray-900">{{ $slab->min_distance }} Km</td>
                                         <td class="px-6 py-4 font-medium text-gray-900">{{ $slab->max_distance }} Km</td>
                                         <td class="px-6 py-4 font-bold text-primary">
-                                            ${{ number_format($slab->total_fee, 2) }}
+                                            YER {{ number_format($slab->total_fee, 2) }}
                                         </td>
                                         <td class="px-6 py-4 text-green-600 font-semibold">
-                                            ${{ number_format($slab->driver_share, 2) }}</td>
+                                            YER {{ number_format($slab->driver_share, 2) }}</td>
                                         <td class="px-6 py-4 text-indigo-600 font-semibold">
-                                            ${{ number_format($slab->platform_share, 2) }}</td>
+                                            YER {{ number_format($slab->platform_share, 2) }}</td>
                                         <td class="px-6 py-4 text-right flex justify-end space-x-2">
                                             <button onclick="editSlab({{ $slab->toJson() }})"
                                                 class="p-2 text-gray-400 hover:text-primary transition-colors">
@@ -319,39 +319,39 @@
                             </div>
                         </div>
 
-                        <div>
-                            <label
-                                class="block text-sm font-semibold text-gray-700 mb-1">{{ __('Total Delivery Fee ($)') }}</label>
-                            <input type="number" step="0.01" name="total_fee" id="total_fee" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                                placeholder="0.00">
-                            @error('total_fee')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label
-                                    class="block text-sm font-semibold text-gray-700 mb-1">{{ __('Driver Share ($)') }}</label>
-                                <input type="number" step="0.01" name="driver_share" id="driver_share" required
+                                    class="block text-sm font-semibold text-gray-700 mb-1">{{ __('Total Delivery Fee (YER)') }}</label>
+                                <input type="number" step="0.01" name="total_fee" id="total_fee" required
                                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                                     placeholder="0.00">
-                                @error('driver_share')
+                                @error('total_fee')
                                     <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
-                            <div>
-                                <label
-                                    class="block text-sm font-semibold text-gray-700 mb-1">{{ __('Platform Share ($)') }}</label>
-                                <input type="number" step="0.01" name="platform_share" id="platform_share" required
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                                    placeholder="0.00">
-                                @error('platform_share')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                @enderror
+ 
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label
+                                        class="block text-sm font-semibold text-gray-700 mb-1">{{ __('Driver Share (YER)') }}</label>
+                                    <input type="number" step="0.01" name="driver_share" id="driver_share" required
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                                        placeholder="0.00">
+                                    @error('driver_share')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-sm font-semibold text-gray-700 mb-1">{{ __('Platform Share (YER)') }}</label>
+                                    <input type="number" step="0.01" name="platform_share" id="platform_share" required
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                                        placeholder="0.00">
+                                    @error('platform_share')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
                             </div>
-                        </div>
 
                         <div class="pt-4 flex space-x-3">
                             <button type="button" onclick="closeModal()"
