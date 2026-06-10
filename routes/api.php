@@ -43,7 +43,7 @@ Route::get('/setup-database', function () {
     try {
         // تشغيل بناء الجداول
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        
+
         // إذا كان لديك ملفات Seeder جاهزة لزرع بيانات افتراضية للمدير، أزل التهميش عن السطر التالي:
         // \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
 
