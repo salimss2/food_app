@@ -39,22 +39,22 @@ Route::prefix('v1')->group(function () {
     Route::get('/about-app', [SettingController::class, 'getAboutAppData']);
 });
 
-Route::get('/setup-database', function () {
-    try {
-        // تشغيل بناء الجداول
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+// Route::get('/setup-database', function () {
+//     try {
+//         // تشغيل بناء الجداول
+//         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
 
-        // إذا كان لديك ملفات Seeder جاهزة لزرع بيانات افتراضية للمدير، أزل التهميش عن السطر التالي:
-        // \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+//         // إذا كان لديك ملفات Seeder جاهزة لزرع بيانات افتراضية للمدير، أزل التهميش عن السطر التالي:
+//         // \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'تم إنشاء جداول قاعدة البيانات بنجاح!'
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'حدث خطأ: ' . $e->getMessage()
-        ], 500);
-    }
-});
+//         return response()->json([
+//             'status' => 'success',
+//             'message' => 'تم إنشاء جداول قاعدة البيانات بنجاح!'
+//         ]);
+//     } catch (\Exception $e) {
+//         return response()->json([
+//             'status' => 'error',
+//             'message' => 'حدث خطأ: ' . $e->getMessage()
+//         ], 500);
+//     }
+// });
