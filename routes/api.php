@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use Modules\Users\Http\Controllers\FavoriteController;
 use Modules\Auth\Http\Controllers\AuthController;
 use Modules\Notifications\Http\Controllers\NotificationController;
+use Illuminate\Support\Facades\Artisan;
+
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -24,4 +26,26 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
+});
+
+Route::get('/run-background-tasks/{secret_key}', function ($secret_key) {
+    // حماية المسار بكلمة سر بسيطة حتى لا يشغله أحد غيرك
+    if ($secret_key !== 'salim-srdms-secret-2026') {
+        abort(403);
+    }
+
+    try {
+        // 1. تشغيل المهام المجدولة (Schedule)
+        Artisan::call('schedule:run');
+
+        // 2. معالجة الطوابير المعلقة (Queue) ثم التوقف فور الانتهاء
+        Artisan::call('queue:work', [
+            '--stop-when-empty' => true,
+            '--timeout' => 60
+        ]);
+
+        return response()->json(['status' => 'success', 'message' => 'Tasks and Queues processed!']);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
 });
