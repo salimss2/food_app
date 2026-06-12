@@ -29,7 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::get('/run-background-tasks/{secret_key}', function ($secret_key) {
-    // حماية المسار بكلمة سر بسيطة حتى لا يشغله أحد غيرك
+    // حماية المسار بكلمة سر بسيطة حتى لا يشغله أحد غير
     if ($secret_key !== 'salim-srdms-secret-2026') {
         abort(403);
     }
