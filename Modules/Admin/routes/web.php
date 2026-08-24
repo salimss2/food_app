@@ -66,6 +66,8 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
     Route::put('/meals/{id}', [RestaurantsController::class, 'updateMeal'])->name('admin.meals.update');
     Route::delete('/meals/{id}', [RestaurantsController::class, 'destroyMeal'])->name('admin.meals.destroy');
     Route::post('/meals/{id}/toggle-availability', [RestaurantsController::class, 'toggleMealAvailability'])->name('admin.meals.toggle-availability');
+    Route::post('/meals/{meal}/options', [RestaurantsController::class, 'storeOption'])->name('admin.meals.options.store');
+    Route::delete('/meal-options/{option}', [RestaurantsController::class, 'destroyOption'])->name('admin.meal-options.destroy');
 
     // Drivers CRUD (Permissions checked in Controller __construct)
     Route::resource('drivers', DriverController::class)->names('admin.drivers')->except(['create', 'edit']);

@@ -116,9 +116,9 @@
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="text-lg font-bold text-gray-900">{{ __('Status Details') }}</h3>
+                                <h3 class="text-lg font-bold text-gray-900">تفاصيل حالة الطلب</h3>
                                 <p class="text-sm text-gray-500">
-                                    {{ __('Payment Status:') }} 
+                                    حالة الدفع: 
                                     <span class="font-semibold text-gray-700 capitalize">
                                         {{ str_replace('_', ' ', $order->payment_status ?? 'N/A') }}
                                     </span>
@@ -139,13 +139,13 @@
                                     'canceled' => 'bg-red-100 text-red-800 border-red-200',
                                 ];
                                 $statusLabels = [
-                                    'pending_admin_approval' => __('Pending Admin Approval'),
-                                    'pending_driver_acceptance' => __('Searching for Driver'),
-                                    'driver_assigned' => __('Driver Assigned'),
-                                    'ready_for_pickup' => __('Ready for Pickup'),
-                                    'on_the_way' => __('On the Way'),
-                                    'delivered' => __('Delivered'),
-                                    'canceled' => __('Canceled'),
+                                    'pending_admin_approval' => 'بانتظار موافقة الإدارة',
+                                    'pending_driver_acceptance' => 'جاري البحث عن موصل',
+                                    'driver_assigned' => 'تم تعيين الموصل',
+                                    'ready_for_pickup' => 'جاهز للاستلام',
+                                    'on_the_way' => 'في الطريق',
+                                    'delivered' => 'تم التوصيل بنجاح',
+                                    'canceled' => 'ملغي',
                                 ];
                                 $badgeClass = $statusColors[$order->status] ?? 'bg-gray-100 text-gray-800 border-gray-200';
                                 $badgeLabel = $statusLabels[$order->status] ?? str_replace('_', ' ', $order->status);
@@ -159,51 +159,65 @@
                     <!-- Items Card -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                         <div class="bg-gray-50 border-b border-gray-200 px-6 py-4">
-                            <h3 class="text-base font-bold text-gray-900">{{ __('Order Items') }}</h3>
+                            <h3 class="text-base font-bold text-gray-900">أصناف الطلب</h3>
                         </div>
                         <div class="overflow-x-auto w-full">
-                            <table class="w-full whitespace-nowrap text-left text-sm text-gray-500">
+                            <table class="w-full whitespace-nowrap text-right text-sm text-gray-500">
                                 <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b border-gray-200">
                                     <tr>
-                                        <th scope="col" class="px-6 py-3">{{ __('Meal') }}</th>
-                                        <th scope="col" class="px-6 py-3">{{ __('Special Instructions') }}</th>
-                                        <th scope="col" class="px-6 py-3 text-center">{{ __('Quantity') }}</th>
-                                        <th scope="col" class="px-6 py-3">{{ __('Unit Price') }}</th>
-                                        <th scope="col" class="px-6 py-3 text-end">{{ __('Subtotal') }}</th>
+                                        <th scope="col" class="px-6 py-3 text-right">الوجبة</th>
+                                        <th scope="col" class="px-6 py-3 text-right">ملاحظات خاصة</th>
+                                        <th scope="col" class="px-6 py-3 text-center">الكمية</th>
+                                        <th scope="col" class="px-6 py-3 text-center">سعر الوحدة</th>
+                                        <th scope="col" class="px-6 py-3 text-left">المجموع</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-200 bg-white">
-                                    @forelse($order->items as $item)
+                                    @forelse(($order->items ?? $order->orderItems ?? []) as $item)
                                         <tr class="hover:bg-gray-50 transition-colors">
-                                            <td class="px-6 py-4 flex items-center">
-                                                <img src="{{ $item->meal->image ?? 'https://ui-avatars.com/api/?name='.urlencode($item->name).'&color=7F9CF5&background=EBF4FF' }}" alt="{{ $item->name }}" class="w-12 h-12 object-cover rounded-lg border border-gray-200 me-3">
-                                                <div>
-                                                    <div class="text-sm font-bold text-gray-900">{{ $item->name }}</div>
-                                                    @if($item->meal)
-                                                        <div class="text-xs text-gray-500">{{ $item->meal->category->name ?? '' }}</div>
-                                                    @endif
-                                                </div>
+                                            {{-- Meal Name & Customizations Badge --}}
+                                            <td class="py-3 px-4 text-right">
+                                                <div class="font-bold text-gray-800">{{ $item->meal->name ?? $item->name ?? $item->meal_name ?? 'وجبة' }}</div>
+                                                @php
+                                                    $customizations = is_string($item->customizations) 
+                                                        ? json_decode($item->customizations, true) 
+                                                        : ($item->customizations ?? []);
+                                                @endphp
+                                                @if(!empty($customizations) && is_array($customizations))
+                                                    <div class="mt-1 flex flex-wrap gap-1">
+                                                        @foreach($customizations as $opt)
+                                                            <span class="inline-flex items-center text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-md">
+                                                                + {{ $opt['name'] ?? $opt['option_name'] ?? 'خيار إضافي' }} 
+                                                                ({{ number_format($opt['price'] ?? $opt['additional_price'] ?? 0, 2) }}$)
+                                                            </span>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
                                             </td>
-                                            <td class="px-6 py-4">
-                                                <span class="text-xs text-gray-600 italic">
-                                                    {{ $item->special_instructions ?? __('None') }}
-                                                </span>
+
+                                            {{-- Special Instructions / Notes --}}
+                                            <td class="py-3 px-4 text-gray-500 text-sm text-right">
+                                                {{ $item->notes ?? $item->special_instructions ?? '-' }}
                                             </td>
-                                            <td class="px-6 py-4 text-center font-semibold text-gray-900">
+
+                                            {{-- Quantity --}}
+                                            <td class="py-3 px-4 text-center font-semibold text-gray-900">
                                                 {{ $item->quantity }}
                                             </td>
-                                            <td class="px-6 py-4 font-medium text-gray-700">
-                                                ${{ number_format($item->price, 2) }}
+
+                                            {{-- Unit Price --}}
+                                            <td class="py-3 px-4 text-center text-gray-700">
+                                                ${{ number_format($item->price ?? $item->unit_price ?? 0, 2) }}
                                             </td>
-                                            <td class="px-6 py-4 text-end font-bold text-gray-900">
-                                                ${{ number_format($item->subtotal, 2) }}
+
+                                            {{-- Subtotal --}}
+                                            <td class="py-3 px-4 text-left font-bold text-gray-900">
+                                                ${{ number_format(($item->price ?? $item->unit_price ?? 0) * $item->quantity, 2) }}
                                             </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="5" class="px-6 py-8 text-center text-gray-400 italic">
-                                                {{ __('No items found in this order.') }}
-                                            </td>
+                                            <td colspan="5" class="py-6 text-center text-gray-400 italic">لا توجد عناصر مسجلة لهذا الطلب</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -218,27 +232,27 @@
                     <!-- Customer Info Card -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
                         <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">
-                            {{ __('Customer Details') }}
+                            تفاصيل العميل
                         </h4>
                         <div class="flex items-center gap-3">
                             <div class="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center text-primary font-bold text-sm uppercase">
-                                {{ substr($order->user->name ?? 'U', 0, 2) }}
+                                {{ substr(($order->customer->name ?? $order->user->name ?? 'U'), 0, 2) }}
                             </div>
                             <div>
-                                <p class="text-sm font-bold text-gray-900">{{ $order->user->name ?? __('Unknown Customer') }}</p>
-                                <p class="text-xs text-gray-500">{{ $order->user->email ?? '' }}</p>
+                                <p class="text-sm font-bold text-gray-900">{{ $order->customer->name ?? $order->user->name ?? 'عميل افتراضي' }}</p>
+                                <p class="text-xs text-gray-500">{{ $order->customer->email ?? $order->user->email ?? '' }}</p>
                             </div>
                         </div>
                         <div class="space-y-2 text-sm text-gray-600 pt-2 border-t border-gray-50">
-                            <p><span class="font-medium text-gray-800">{{ __('Phone:') }}</span> {{ $order->user->phone ?? __('Not provided') }}</p>
-                            <p class="leading-relaxed"><span class="font-medium text-gray-800">{{ __('Address:') }}</span> {{ $order->address ?? __('Not provided') }}</p>
+                            <p><span class="font-medium text-gray-800">الهاتف:</span> {{ $order->customer->phone ?? $order->user->phone ?? $order->customer_phone ?? '770000000' }}</p>
+                            <p class="leading-relaxed"><span class="font-medium text-gray-800">العنوان:</span> {{ $order->delivery_address ?? $order->address ?? 'المكلا - الشارع العام' }}</p>
                         </div>
                     </div>
 
                     <!-- Restaurant Info Card -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
                         <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">
-                            {{ __('Restaurant Details') }}
+                            تفاصيل المطعم
                         </h4>
                         @if($order->restaurant)
                             <div class="flex items-center gap-3">
@@ -249,18 +263,18 @@
                                 </div>
                             </div>
                             <div class="space-y-2 text-sm text-gray-600 pt-2 border-t border-gray-50">
-                                <p><span class="font-medium text-gray-800">{{ __('Phone:') }}</span> {{ $order->restaurant->phone ?? __('Not provided') }}</p>
-                                <p><span class="font-medium text-gray-800">{{ __('Address:') }}</span> {{ $order->restaurant->address ?? __('Not provided') }}</p>
+                                <p><span class="font-medium text-gray-800">الهاتف:</span> {{ $order->restaurant->phone ?? '771111111' }}</p>
+                                <p><span class="font-medium text-gray-800">العنوان:</span> {{ $order->restaurant->address ?? 'المكلا - الديس' }}</p>
                             </div>
                         @else
-                            <p class="text-sm text-gray-400 italic">{{ __('Unknown Restaurant') }}</p>
+                            <p class="text-sm text-gray-400 italic">مطعم غير معروف</p>
                         @endif
                     </div>
 
                     <!-- Driver Info Card -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
                         <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">
-                            {{ __('Driver Details') }}
+                            تفاصيل الموصل
                         </h4>
                         @if($order->driver)
                             <div class="flex items-center gap-3">
@@ -273,10 +287,10 @@
                                 </div>
                             </div>
                             <div class="space-y-2 text-sm text-gray-600 pt-2 border-t border-gray-50">
-                                <p><span class="font-medium text-gray-800">{{ __('Phone:') }}</span> {{ $order->driver->phone ?? __('Not provided') }}</p>
-                                <p><span class="font-medium text-gray-800">{{ __('Status:') }}</span> 
+                                <p><span class="font-medium text-gray-800">الهاتف:</span> {{ $order->driver->phone ?? '772222222' }}</p>
+                                <p><span class="font-medium text-gray-800">الحالة:</span> 
                                     <span class="px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-                                        {{ __('Assigned') }}
+                                        تم التعيين
                                     </span>
                                 </p>
                             </div>
@@ -286,8 +300,8 @@
                                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
                                     <span class="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
                                 </div>
-                                <p class="text-sm font-medium text-yellow-600">{{ __('Searching for Driver...') }}</p>
-                                <p class="text-xs text-gray-400 mt-1">{{ __('No driver assigned yet.') }}</p>
+                                <p class="text-sm font-medium text-yellow-600">جاري البحث عن موصل...</p>
+                                <p class="text-xs text-gray-400 mt-1">لم يتم تعيين موصل حتى الآن.</p>
                             </div>
                         @endif
                     </div>
@@ -295,27 +309,43 @@
                     <!-- Financial Summary Card -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
                         <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">
-                            {{ __('Financial Summary') }}
+                            الملخص المالي
                         </h4>
+                        @php
+                            $itemsColl = $order->items ?? $order->orderItems ?? collect();
+                            $calcSub = $itemsColl->sum(fn($i) => ($i->price ?? $i->unit_price ?? 0) * ($i->quantity ?? 1));
+                            $deliveryFee = $order->delivery_fee ?? 25;
+                            $orderTotal = $order->total_amount ?? $order->total_price ?? $order->total ?? 0;
+                            
+                            $subtotalAmount = ($order->subtotal ?? 0) > 0 
+                                ? $order->subtotal 
+                                : (($orderTotal > $deliveryFee) 
+                                    ? ($orderTotal - $deliveryFee) 
+                                    : ($calcSub > 0 ? $calcSub : $orderTotal));
+
+                            $grandTotal = $orderTotal > 0 
+                                ? max($orderTotal, $subtotalAmount + $deliveryFee - ($order->discount_amount ?? 0))
+                                : ($subtotalAmount + $deliveryFee - ($order->discount_amount ?? 0));
+                        @endphp
                         <div class="space-y-3 text-sm">
                             <div class="flex justify-between text-gray-600">
-                                <span>{{ __('Subtotal') }}</span>
-                                <span class="font-medium">${{ number_format($order->items->sum('subtotal'), 2) }}</span>
+                                <span>المجموع الفرعي</span>
+                                <span class="font-medium">${{ number_format($subtotalAmount, 2) }}</span>
                             </div>
                             <div class="flex justify-between text-gray-600">
-                                <span>{{ __('Delivery Fee') }}</span>
-                                <span class="font-medium">${{ number_format($order->delivery_fee, 2) }}</span>
+                                <span>رسوم التوصيل</span>
+                                <span class="font-medium">${{ number_format($deliveryFee, 2) }}</span>
                             </div>
-                            @if($order->discount_amount > 0)
+                            @if(($order->discount_amount ?? 0) > 0)
                                 <div class="flex justify-between text-red-600 font-medium">
-                                    <span>{{ __('Discount') }}</span>
+                                    <span>الخصم</span>
                                     <span>-${{ number_format($order->discount_amount, 2) }}</span>
                                 </div>
                             @endif
                             
                             <div class="pt-3 border-t border-gray-200 flex justify-between items-center">
-                                <span class="text-base font-bold text-gray-900">{{ __('Grand Total') }}</span>
-                                <span class="text-xl font-bold text-primary">${{ number_format($order->total, 2) }}</span>
+                                <span class="text-base font-bold text-gray-900">المجموع الكلي</span>
+                                <span class="text-xl font-bold text-primary">${{ number_format($grandTotal, 2) }}</span>
                             </div>
                         </div>
                     </div>

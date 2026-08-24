@@ -44,7 +44,7 @@ async function fetchAPI(url, options = {}) {
             };
         }
 
-        return data; 
+        return data;
     } catch (error) {
         console.error('[restaurants.js] fetchAPI error:', error);
         return { success: false, message: error.message };
@@ -93,7 +93,7 @@ function openModal(modalId) {
         document.getElementById('restaurantId').value = '';
         document.getElementById('restaurant-modal-title').innerText = 'Add Restaurant';
         document.getElementById('methodContainer').innerHTML = '';
-        
+
         var pwField = document.getElementById('rPasswordField');
         if (pwField) pwField.classList.remove('hidden-el');
         document.getElementById('rPassword').setAttribute('required', 'required');
@@ -119,7 +119,7 @@ async function saveRestaurant() {
     const event = window.event;
     const submitBtn = (event && event.target) ? (event.target.tagName === 'BUTTON' ? event.target : event.target.closest('button')) : null;
     const originalText = submitBtn ? submitBtn.innerText : 'Save';
-    
+
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.innerText = 'Saving...';
@@ -144,7 +144,7 @@ async function saveRestaurant() {
         let result;
         try {
             result = JSON.parse(text);
-        } catch(e) {
+        } catch (e) {
             console.error('[restaurants.js] Save Error JSON:', text);
             throw new Error("Invalid server response.");
         }
@@ -186,12 +186,25 @@ function updateTableUI(restaurant, mode) {
     const state = (restaurant.status || 'closed').toLowerCase();
     const accStatus = (restaurant.account_status || 'active').toLowerCase();
 
-    const logoSrc = restaurant.logo_url || (restaurant.logo ? (restaurant.logo.includes('/') ? `/storage/${restaurant.logo}` : `/storage/restaurants/logos/${restaurant.logo}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(restaurant.name)}&background=random`);
+    let logoSrc = '/assets/default-restaurant.png';
+    if (restaurant.logo_url && typeof restaurant.logo_url === 'string' && !restaurant.logo_url.includes('ui-avatars.com')) {
+        logoSrc = restaurant.logo_url;
+    } else if (restaurant.logo) {
+        if (restaurant.logo.startsWith('http://') || restaurant.logo.startsWith('https://')) {
+            logoSrc = restaurant.logo;
+        } else {
+            const cleanPath = restaurant.logo.replace(/^\/+/, '').replace(/^storage\//, '');
+            logoSrc = `/storage/${cleanPath}`;
+        }
+    }
 
     const rowHTMLContent = `
         <td class="px-6 py-4">
             <div class="flex items-center">
-                <img class="res-logo h-10 w-10 rounded-lg border border-gray-200 mr-3 object-cover" src="${logoSrc}" alt="">
+                <img class="res-logo h-10 w-10 rounded-lg border border-gray-200 me-3 object-cover" 
+                     src="${logoSrc}" 
+                     alt="${restaurant.name}"
+                     onerror="this.onerror=null;this.src='/assets/default-restaurant.png';">
                 <div>
                     <div class="res-name-text text-sm font-medium text-gray-900">${restaurant.name}</div>
                     <div class="res-status-subtext text-xs text-gray-500">${restaurant.status === 'open' ? 'Open' : 'Closed'}</div>
@@ -200,7 +213,7 @@ function updateTableUI(restaurant, mode) {
         </td>
         <td class="px-6 py-4">
             <div class="res-owner-name text-sm text-gray-900">${restaurant.owner ? restaurant.owner.name : 'No Manager'}</div>
-            <div class="res-owner-phone text-xs text-gray-400">${restaurant.owner ? restaurant.owner.phone : ''}</div>
+            <div class="res-owner-phone text-xs text-gray-400">${restaurant.owner ? (restaurant.owner.phone || '') : ''}</div>
         </td>
         <td class="px-6 py-4">
             <span class="res-category-badge px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-xs font-semibold">${restaurant.category}</span>
@@ -213,7 +226,12 @@ function updateTableUI(restaurant, mode) {
         <td class="px-6 py-4 text-center flex justify-center">
             ${stateObj}
         </td>
-        <td class="px-6 py-4 text-right text-sm font-medium space-x-2">
+        <td class="px-6 py-4 text-end text-sm font-medium space-x-reverse space-x-2">
+            <a href="/admin/restaurants/${restaurant.id}" class="text-indigo-600 hover:text-indigo-900 inline-block" title="View Details">
+                <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+            </a>
             <button onclick="openDetailsB64('${b64}')" class="text-indigo-600 hover:text-indigo-900" title="Quick View">
                 <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
             </button>
@@ -278,18 +296,18 @@ function openEditModal(data) {
     // 2. Populate data strictly using IDs AFTER reset
     document.getElementById('restaurant-modal-title').innerText = 'Edit Restaurant';
     document.getElementById('restaurantId').value = data.id || '';
-    
+
     document.getElementById('methodContainer').innerHTML = '<input type="hidden" name="_method" value="PUT">';
 
     document.getElementById('rName').value = data.name || '';
     document.getElementById('rCategory').value = data.category || 'Fast Food';
     document.getElementById('rAddress').value = data.location || '';
     document.getElementById('rStatus').value = data.status || 'open';
-    
+
     document.getElementById('rOwner').value = (data.owner ? data.owner.name : '') || '';
     document.getElementById('rPhone').value = (data.owner ? data.owner.phone : '') || '';
     document.getElementById('rEmail').value = (data.owner ? data.owner.email : '') || '';
-    
+
     var pwField = document.getElementById('rPasswordField');
     if (pwField) pwField.classList.add('hidden-el');
     document.getElementById('rPassword').removeAttribute('required');
@@ -303,7 +321,7 @@ function openDetailsModal(data) {
     document.getElementById('detailResPhone').innerText = (data.owner ? data.owner.phone : '—');
     document.getElementById('detailResEmail').innerText = (data.owner ? data.owner.email : '—');
     document.getElementById('detailResAddress').innerText = data.location || '—';
-    
+
     var logoEl = document.getElementById('detailResLogo');
     if (logoEl) {
         const logoSrc = data.logo_url || (data.logo ? (data.logo.includes('/') ? `/storage/${data.logo}` : `/storage/restaurants/logos/${data.logo}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`);
@@ -320,7 +338,7 @@ function openDeleteModal(id) {
 
 async function confirmDelete() {
     if (!window.restaurantToDelete) return;
-    
+
     const id = window.restaurantToDelete;
     const url = `/admin/restaurants/${id}`;
 
@@ -353,7 +371,7 @@ async function toggleState(id, btnEl) {
             // Update the button HTML using the helper
             const container = btnEl.parentElement;
             container.innerHTML = getStateButton(id, newState);
-            
+
             // Also update the subtext in the name cell
             const subtext = row.querySelector('.res-status-subtext');
             if (subtext) subtext.innerText = result.is_open ? 'Open' : 'Closed';
@@ -389,7 +407,7 @@ async function blockRestaurant(id, btnEl) {
             // Swap SVG and Title
             btnEl.innerHTML = getBlockIcon(result.new_status);
             btnEl.setAttribute('title', result.new_status === 'Blocked' ? 'Unblock' : 'Block');
-            
+
             // Toggle button color classes
             if (result.new_status === 'Blocked') {
                 btnEl.classList.remove('text-red-500', 'hover:text-red-700');
@@ -412,14 +430,14 @@ function filterRestaurants(filterType, btnEl) {
     if (!tbody) return;
 
     const rows = tbody.querySelectorAll('tr[id^="restaurant-row-"]');
-    
+
     // Update toolbar active classes
     const buttons = document.querySelectorAll('#filterToolbar .filter-btn');
     buttons.forEach(btn => {
         btn.classList.remove('bg-primary', 'text-white', 'active-filter');
         btn.classList.add('bg-white', 'text-gray-600');
     });
-    
+
     if (btnEl) {
         btnEl.classList.remove('bg-white', 'text-gray-600');
         btnEl.classList.add('bg-primary', 'text-white', 'active-filter');

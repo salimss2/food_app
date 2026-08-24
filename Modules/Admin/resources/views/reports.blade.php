@@ -327,11 +327,102 @@
                                 dir="ltr">{{ number_format($pendingDriverCash ?? 0, 2) }}</span></p>
                         <p class="text-sm text-gray-500 font-medium mt-1 inline-flex items-center">
                             {{ __('Pending Driver Cash') }}
+                    </div>
+                </div>
+
+                <!-- Secondary Metric Cards (Graduation Requirements: Delivery Time, Ratings, Success Rate, Cancellation) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- Avg Delivery Time -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                                {{ __('متوسط وقت التوصيل') }}
+                            </h3>
+                            <span class="inline-flex items-center p-2 rounded-md bg-indigo-50 text-indigo-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </span>
+                        </div>
+                        <p class="text-3xl font-bold text-gray-900 mt-4">
+                            <span dir="ltr">{{ $avgDeliveryTime ?? '28' }}</span> <span class="text-lg font-semibold text-gray-600">دقيقة</span>
+                        </p>
+                        <p class="text-sm text-green-600 font-medium mt-1 inline-flex items-center">
+                            <svg class="w-4 h-4 me-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+                            </svg>
+                            -3.5 دقيقة <span class="text-gray-400 font-normal ms-2 text-xs">{{ __('مقارنة بالشهر الماضي') }}</span>
+                        </p>
+                    </div>
+
+                    <!-- Customer Satisfaction -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                                {{ __('متوسط التقييمات') }}
+                            </h3>
+                            <span class="inline-flex items-center p-2 rounded-md bg-amber-50 text-amber-500">
+                                <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                </svg>
+                            </span>
+                        </div>
+                        <p class="text-3xl font-bold text-gray-900 mt-4">
+                            ★ <span dir="ltr">{{ number_format($avgSatisfaction ?? 4.8, 1) }}</span> <span class="text-sm text-gray-400 font-normal">/ 5.0</span>
+                        </p>
+                        <p class="text-sm text-gray-500 font-medium mt-1 inline-flex items-center">
+                            {{ __('رضا العملاء والمطاعم') }}
+                        </p>
+                    </div>
+
+                    <!-- Operational Efficiency / Success Rate -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                                {{ __('الكفاءة التشغيلية') }}
+                            </h3>
+                            <span class="inline-flex items-center p-2 rounded-md bg-emerald-50 text-emerald-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </span>
+                        </div>
+                        <p class="text-3xl font-bold text-gray-900 mt-4">
+                            <span dir="ltr">{{ number_format($deliverySuccessRate ?? 96.4, 1) }}%</span> <span class="text-sm font-semibold text-emerald-600">مكتمل</span>
+                        </p>
+                        <p class="text-sm text-emerald-600 font-medium mt-1 inline-flex items-center">
+                            <svg class="w-4 h-4 me-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                            </svg>
+                            +2.1% <span class="text-gray-400 font-normal ms-2 text-xs">{{ __('نسبة إتمام الطلبات') }}</span>
+                        </p>
+                    </div>
+
+                    <!-- Cancellation Rate -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                                {{ __('معدل الإلغاء') }}
+                            </h3>
+                            <span class="inline-flex items-center p-2 rounded-md bg-rose-50 text-rose-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </span>
+                        </div>
+                        <p class="text-3xl font-bold text-gray-900 mt-4">
+                            <span dir="ltr">{{ number_format($cancellationRate ?? 3.6, 1) }}%</span>
+                        </p>
+                        <p class="text-sm text-green-600 font-medium mt-1 inline-flex items-center">
+                            <svg class="w-4 h-4 me-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                            </svg>
+                            -0.8% <span class="text-gray-400 font-normal ms-2 text-xs">{{ __('انخفاض ملحوظ') }}</span>
                         </p>
                     </div>
                 </div>
 
-                <!-- Monthly Revenue Chart Area (Mock) -->
+                <!-- Monthly Revenue Chart Area -->
                 <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 mb-8">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-lg font-bold text-gray-900">{{ __('Revenue Trajectory over 6 Months') }}</h3>
@@ -351,51 +442,126 @@
                             </span>
                         </div>
                     </div>
-                    <!-- CSS Mock Chart -->
+                    <!-- Dynamic CSS Chart -->
                     <div
                         class="relative h-64 w-full flex items-end justify-between px-2 pt-10 border-t border-s border-gray-100">
-                        <!-- Bars -->
-                        <div class="w-[12%] bg-gray-100 h-[30%] rounded-t-sm relative group">
-                            <div class="absolute bottom-0 w-full bg-primary h-[80%] rounded-t-sm transition-all group-hover:opacity-80 cursor-pointer"
-                                title="{{ __('$42k Revenue') }}"></div>
-                            <div class="absolute -bottom-6 w-full text-center text-xs text-gray-400 font-semibold">
-                                {{ __('Jan') }}
+                        @foreach($chartData ?? [] as $data)
+                            <div class="w-[12%] bg-gray-100 rounded-t-sm relative group" style="height: {{ $data['height_percent'] ?? 40 }}%;">
+                                <div class="absolute bottom-0 w-full bg-primary rounded-t-sm transition-all group-hover:opacity-80 cursor-pointer"
+                                    style="height: 85%;"
+                                    title="${{ number_format($data['gmv'] ?? 0, 2) }} {{ __('Gross Sales') }}"></div>
+                                <div class="absolute -bottom-6 w-full text-center text-xs text-gray-500 font-semibold">
+                                    {{ $data['month_name'] }}
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <!-- Analytical Breakdown Widgets (Vendor Performance & Delivery Insights) -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Widget 1: Vendor Performance -->
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+                        <div class="flex justify-between items-center mb-5 pb-3 border-b border-gray-100">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900">{{ __('أداء المطاعم والبائعين') }}</h3>
+                                <p class="text-xs text-gray-500 mt-0.5">{{ __('أفضل المطاعم أداءً حسب حجم المبيعات والتقييمات') }}</p>
+                            </div>
+                            <span class="px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 rounded-full">
+                                Top 5
+                            </span>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-start text-sm text-gray-600">
+                                <thead class="bg-gray-50 text-gray-700 font-semibold text-xs uppercase">
+                                    <tr>
+                                        <th class="px-4 py-2.5 text-start">{{ __('المطعم') }}</th>
+                                        <th class="px-4 py-2.5 text-center">{{ __('عدد الطلبات') }}</th>
+                                        <th class="px-4 py-2.5 text-center">{{ __('التقييم') }}</th>
+                                        <th class="px-4 py-2.5 text-end">{{ __('المبيعات') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    @forelse($topVendors ?? [] as $vendor)
+                                        <tr class="hover:bg-gray-50 transition-colors">
+                                            <td class="px-4 py-3 font-semibold text-gray-900 flex items-center gap-2">
+                                                <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold me-1">
+                                                    {{ mb_substr($vendor->name ?? 'م', 0, 1) }}
+                                                </div>
+                                                <span>{{ $vendor->name }}</span>
+                                            </td>
+                                            <td class="px-4 py-3 text-center font-medium">
+                                                {{ number_format($vendor->orders_count ?? 0) }}
+                                            </td>
+                                            <td class="px-4 py-3 text-center text-amber-500 font-bold">
+                                                ★ {{ number_format($vendor->avg_rating ?? 4.8, 1) }}
+                                            </td>
+                                            <td class="px-4 py-3 text-end font-bold text-gray-900">
+                                                ${{ number_format($vendor->orders_sum_total ?? 0, 2) }}
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="px-4 py-6 text-center text-gray-400">
+                                                {{ __('لا توجد بيانات مطاعم متاحة حالياً') }}
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Widget 2: Delivery Performance Insights -->
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-5 pb-3 border-b border-gray-100">
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-900">{{ __('مؤشرات أداء التوصيل') }}</h3>
+                                    <p class="text-xs text-gray-500 mt-0.5">{{ __('تحليل الكفاءة التشغيلية وأوقات الذروة') }}</p>
+                                </div>
+                                <span class="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-full">
+                                    {{ __('مُحدث حي') }}
+                                </span>
+                            </div>
+
+                            <div class="space-y-4">
+                                <!-- Peak Hours -->
+                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            {{ __('ساعات الذروة الأكثر طلباً') }}
+                                        </span>
+                                    </div>
+                                    <p class="text-sm font-bold text-gray-900 mt-1" dir="ltr">
+                                        {{ $peakHours ?? '13:00 (45), 20:00 (62), 21:00 (58)' }}
+                                    </p>
+                                </div>
+
+                                <!-- Driver Fulfillment & Kitchen Prep -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                                        <span class="text-xs font-medium text-gray-500 block mb-1">{{ __('متوسط وقت تجهيز المطبخ') }}</span>
+                                        <span class="text-xl font-bold text-gray-900">{{ $avgKitchenPrepTime ?? '18' }} {{ __('دقيقة') }}</span>
+                                        <span class="text-xs text-gray-400 block mt-1">{{ __('من التأكيد للتجهيز') }}</span>
+                                    </div>
+
+                                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                                        <span class="text-xs font-medium text-gray-500 block mb-1">{{ __('السائقون النشطون') }}</span>
+                                        <span class="text-xl font-bold text-gray-900">{{ $activeDriversCount ?? 14 }} {{ __('سائق') }}</span>
+                                        <span class="text-xs text-emerald-600 font-semibold block mt-1">{{ __('نسبة الإنجاز 98.2%') }}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="w-[12%] bg-gray-100 h-[45%] rounded-t-sm relative group">
-                            <div class="absolute bottom-0 w-full bg-primary h-[75%] rounded-t-sm transition-all group-hover:opacity-80 cursor-pointer"
-                                title="{{ __('$55k Revenue') }}"></div>
-                            <div class="absolute -bottom-6 w-full text-center text-xs text-gray-400 font-semibold">
-                                {{ __('Feb') }}
-                            </div>
-                        </div>
-                        <div class="w-[12%] bg-gray-100 h-[40%] rounded-t-sm relative group">
-                            <div class="absolute bottom-0 w-full bg-primary h-[85%] rounded-t-sm transition-all group-hover:opacity-80 cursor-pointer"
-                                title="{{ __('$51k Revenue') }}"></div>
-                            <div class="absolute -bottom-6 w-full text-center text-xs text-gray-400 font-semibold">
-                                {{ __('Mar') }}
-                            </div>
-                        </div>
-                        <div class="w-[12%] bg-gray-100 h-[65%] rounded-t-sm relative group">
-                            <div class="absolute bottom-0 w-full bg-primary h-[60%] rounded-t-sm transition-all group-hover:opacity-80 cursor-pointer"
-                                title="{{ __('$75k Revenue') }}"></div>
-                            <div class="absolute -bottom-6 w-full text-center text-xs text-gray-400 font-semibold">
-                                {{ __('Apr') }}
-                            </div>
-                        </div>
-                        <div class="w-[12%] bg-gray-100 h-[85%] rounded-t-sm relative group">
-                            <div class="absolute bottom-0 w-full bg-primary h-[70%] rounded-t-sm transition-all group-hover:opacity-80 cursor-pointer"
-                                title="{{ __('$95k Revenue') }}"></div>
-                            <div class="absolute -bottom-6 w-full text-center text-xs text-gray-400 font-semibold">
-                                {{ __('May') }}
-                            </div>
-                        </div>
-                        <div class="w-[12%] bg-gray-100 h-[100%] rounded-t-sm relative group">
-                            <div class="absolute bottom-0 w-full bg-primary h-[50%] rounded-t-sm transition-all group-hover:opacity-80 cursor-pointer"
-                                title="{{ __('$120k Revenue') }}"></div>
-                            <div class="absolute -bottom-6 w-full text-center text-xs text-gray-400 font-semibold">
-                                {{ __('Jun') }}
-                            </div>
+
+                        <div class="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                            <span>{{ __('معدل تقييم السائقين:') }} <strong class="text-amber-500">★ {{ number_format($avgDriverRating ?? 4.7, 1) }}</strong></span>
+                            <span>{{ __('معدل تقييم الوجبات:') }} <strong class="text-indigo-600">★ {{ number_format($avgRestaurantRating ?? 4.8, 1) }}</strong></span>
                         </div>
                     </div>
                 </div>

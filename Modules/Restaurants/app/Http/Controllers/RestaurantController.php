@@ -40,7 +40,7 @@ class RestaurantController extends Controller
     public function show($id)
     {
         // 1. جلب المطعم مع الأقسام ومع الوجبات داخل كل قسم بطلب واحد
-        $restaurant = Restaurant::with(['meal_categories.meals.variants'])->findOrFail($id);
+        $restaurant = Restaurant::with(['meal_categories.meals.variants', 'meal_categories.meals.options'])->findOrFail($id);
 
         // 2. تحويل الكائن إلى مصفوفة للتأكد من المسميات
         $data = $restaurant->toArray();

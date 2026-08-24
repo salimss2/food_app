@@ -104,4 +104,10 @@ class Meal extends Model
     {
         return $this->hasMany(MealVariant::class, 'meal_id');
     }
+
+    public function options(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(MealOption::class, 'meal_id');
+    }
 }
+

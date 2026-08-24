@@ -186,9 +186,14 @@
                                         class="hover:bg-gray-50 transition-colors">
                                         <td class="px-6 py-4">
                                             <div class="flex items-center">
-                                                <img class="res-logo h-10 w-10 rounded-lg border border-gray-200 me-3 object-cover"
-                                                    src="{{ $restaurant->logo }}"
-                                                    alt="">
+                                                @php
+                                                    $rawLogo = $restaurant->getRawOriginal('logo');
+                                                    $logoUrl = $rawLogo ? (\Illuminate\Support\Str::startsWith($rawLogo, ['http://', 'https://']) ? $rawLogo : asset('storage/' . ltrim($rawLogo, '/'))) : asset('assets/default-restaurant.png');
+                                                @endphp
+                                                <img src="{{ $logoUrl }}"
+                                                    alt="{{ $restaurant->name }}"
+                                                    onerror="this.onerror=null;this.src='{{ asset('assets/default-restaurant.png') }}';"
+                                                    class="res-logo h-10 w-10 rounded-lg border border-gray-200 me-3 object-cover">
                                                 <div>
                                                     <div class="res-name-text text-sm font-medium text-gray-900">
                                                         {{ $restaurant->name }}</div>

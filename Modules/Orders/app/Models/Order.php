@@ -42,7 +42,16 @@ class Order extends Model
         'delivery_lng',
         'settlement_id',
         'restaurant_settlement_id',
+        'accepted_at',
+        'confirmed_at',
+        'ready_at',
+        'delivered_at',
     ];
+
+    public function review()
+    {
+        return $this->hasOne(OrderReview::class, 'order_id');
+    }
 
     /**
      * العلاقة: الطلب ينتمي لتسوية مالية واحدة.
@@ -86,6 +95,16 @@ class Order extends Model
     public function user()
     {
         return $this->belongsTo(\App\Models\User::class, 'user_id');
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'user_id');
+    }
+
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class, 'order_id');
     }
 
     public function logs()

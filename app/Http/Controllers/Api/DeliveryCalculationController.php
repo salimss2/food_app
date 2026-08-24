@@ -66,6 +66,11 @@ class DeliveryCalculationController extends Controller
     {
         $earthRadius = 6371; // Radius of the earth in kilometers
 
+        $lat1 = (float) $lat1;
+        $lon1 = (float) $lon1;
+        $lat2 = (float) $lat2;
+        $lon2 = (float) $lon2;
+
         $latDelta = deg2rad($lat2 - $lat1);
         $lonDelta = deg2rad($lon2 - $lon1);
 
@@ -73,7 +78,7 @@ class DeliveryCalculationController extends Controller
             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
             sin($lonDelta / 2) * sin($lonDelta / 2);
 
-        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        $c = 2 * atan2(sqrt(max(0, min(1, $a))), sqrt(max(0, min(1, 1 - $a))));
 
         return $earthRadius * $c;
     }

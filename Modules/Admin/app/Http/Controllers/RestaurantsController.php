@@ -72,7 +72,7 @@ class RestaurantsController extends Controller implements HasMiddleware
                 'owner_email' => 'required|email|unique:users,email',
                 'owner_phone' => 'required|string',
                 'password' => 'required|string|min:8',
-                'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             ob_clean();
@@ -103,11 +103,8 @@ class RestaurantsController extends Controller implements HasMiddleware
                 $logoPath = null;
                 if ($request->hasFile('logo')) {
                     $file = $request->file('logo');
-                    $filename = time() . '_' . $file->getClientOriginalName();
-
-                    $file->storeAs('restaurants/logos', $filename, 's3');
-
-                    $logoPath = 'restaurants/logos/' . $filename;
+                    $filename = time() . '_' . uniqid() . '.' . ($file->getClientOriginalExtension() ?: 'jpg');
+                    $logoPath = $file->storeAs('restaurants/logos', $filename, 'public');
                 }
 
                 // 3. Create Restaurant
@@ -147,8 +144,9 @@ class RestaurantsController extends Controller implements HasMiddleware
      */
     public function show($id)
     {
-        // جلب المطعم مع بيانات المالك والوجبات والأقسام
-        $restaurant = Restaurant::with(['owner', 'meals', 'mealCategories'])->findOrFail($id);
+        // جلب المطعم مع بيانات المالك والوجبات والأقسام وخيارات الوجبات
+        $restaurant = Restaurant::with(['owner', 'meals.options', 'meal_categories.meals.options'])->findOrFail($id);
+        $categories = $restaurant->meal_categories;
 
         // --- Performance Metrics Calculation ---
 
@@ -268,7 +266,7 @@ class RestaurantsController extends Controller implements HasMiddleware
             ->filter(fn($d) => $d['lat'] && $d['lng'])
             ->values();
 
-        return view('admin::restaurant-details', compact('restaurant', 'metrics', 'latestOrders', 'drivers'));
+        return view('admin::restaurant-details', compact('restaurant', 'categories', 'metrics', 'latestOrders', 'drivers'));
     }
 
     /**
@@ -287,7 +285,7 @@ class RestaurantsController extends Controller implements HasMiddleware
                 'owner_name' => 'required|string|max:255',
                 'owner_email' => 'required|email|unique:users,email,' . ($user->id ?? 0),
                 'owner_phone' => 'nullable|string',
-                'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             ob_clean();
@@ -312,33 +310,30 @@ class RestaurantsController extends Controller implements HasMiddleware
                     }
                 }
 
-                // Handle Logo Update
-                if ($request->hasFile('logo')) {
-                    // Delete old logo
-                    if ($restaurant->logo) {
-                        $oldLogoPath = str_contains($restaurant->logo, '/') ? $restaurant->logo : 'restaurants/logos/' . $restaurant->logo;
-                        if ($oldLogoPath) {
-                            \Illuminate\Support\Facades\Storage::disk('s3')->delete($oldLogoPath);
-                        }
-                    }
-
-                    $file = $request->file('logo');
-                    $filename = time() . '_' . $file->getClientOriginalName();
-
-                    $file->storeAs('restaurants/logos', $filename, 's3');
-
-                    // إسناد المسار الجديد للمطعم
-                    $restaurant->logo = 'restaurants/logos/' . $filename;
-                }
-
-                // Update Restaurant
-                $restaurant->update([
+                $updateData = [
                     'name' => $request->name,
                     'category' => $request->category,
                     'location' => $request->location,
                     'status' => $request->status ?? $restaurant->status,
                     'account_status' => $request->account_status ?? $restaurant->account_status,
-                ]);
+                ];
+
+                // Handle Logo Update
+                if ($request->hasFile('logo')) {
+                    $rawOldLogo = $restaurant->getRawOriginal('logo');
+                    if ($rawOldLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($rawOldLogo)) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($rawOldLogo);
+                    }
+
+                    $file = $request->file('logo');
+                    $filename = time() . '_' . uniqid() . '.' . ($file->getClientOriginalExtension() ?: 'jpg');
+                    $path = $file->storeAs('restaurants/logos', $filename, 'public');
+
+                    $updateData['logo'] = $path;
+                }
+
+                // Update Restaurant
+                $restaurant->update($updateData);
             });
 
             $restaurant->load('owner');
@@ -464,17 +459,20 @@ class RestaurantsController extends Controller implements HasMiddleware
         $request->validate([
             'restaurant_id' => 'required|exists:restaurants,id',
             'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:meal_categories,id',
+            'meal_category_id' => 'required_without:category_id|nullable|exists:meal_categories,id',
+            'category_id' => 'required_without:meal_category_id|nullable|exists:meal_categories,id',
             'price' => 'required|numeric|min:0',
             'description' => 'nullable|string',
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
+        $categoryId = $request->input('meal_category_id', $request->input('category_id'));
+
         try {
-            return DB::transaction(function () use ($request) {
+            return DB::transaction(function () use ($request, $categoryId) {
                 $meal = \Modules\Restaurants\Models\Meal::create([
                     'restaurant_id' => $request->restaurant_id,
-                    'meal_category_id' => $request->category_id,
+                    'meal_category_id' => $categoryId,
                     'name' => $request->name,
                     'price' => $request->price,
                     'description' => $request->description,
@@ -483,9 +481,9 @@ class RestaurantsController extends Controller implements HasMiddleware
 
                 if ($request->hasFile('image')) {
                     $file = $request->file('image');
-                    $filename = time() . '_' . $file->getClientOriginalName();
-                    $file->storeAs('meals', $filename, 's3');
-                    $meal->update(['image' => 'meals/' . $filename]);
+                    $filename = time() . '_' . uniqid() . '.' . ($file->getClientOriginalExtension() ?: 'jpg');
+                    $path = $file->storeAs('meals', $filename, 'public');
+                    $meal->update(['image' => $path]);
                 }
 
                 return back()->with('success', __('Meal added successfully.'));
@@ -503,7 +501,7 @@ class RestaurantsController extends Controller implements HasMiddleware
         $request->validate([
             'restaurant_id' => 'required|exists:restaurants,id',
             'name' => 'required|string|max:255',
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         try {
@@ -515,9 +513,9 @@ class RestaurantsController extends Controller implements HasMiddleware
 
                 if ($request->hasFile('image')) {
                     $file = $request->file('image');
-                    $filename = time() . '_' . $file->getClientOriginalName();
-                    $file->storeAs('categories', $filename, 's3');
-                    $category->update(['image' => 'categories/' . $filename]);
+                    $filename = time() . '_' . uniqid() . '.' . ($file->getClientOriginalExtension() ?: 'jpg');
+                    $path = $file->storeAs('categories', $filename, 'public');
+                    $category->update(['image' => $path]);
                 }
 
                 return back()->with('success', __('Category added successfully.'));
@@ -539,7 +537,7 @@ class RestaurantsController extends Controller implements HasMiddleware
             'category_id' => 'required|exists:meal_categories,id',
             'price' => 'required|numeric|min:0',
             'description' => 'nullable|string',
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         try {
@@ -553,13 +551,13 @@ class RestaurantsController extends Controller implements HasMiddleware
 
                 if ($request->hasFile('image')) {
                     // Delete old image if exists
-                    if ($meal->image) {
-                        \Illuminate\Support\Facades\Storage::disk('s3')->delete($meal->image);
+                    if ($meal->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($meal->image)) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($meal->image);
                     }
                     $file = $request->file('image');
-                    $filename = time() . '_' . $file->getClientOriginalName();
-                    $file->storeAs('meals', $filename, 'public');
-                    $meal->update(['image' => 'meals/' . $filename]);
+                    $filename = time() . '_' . uniqid() . '.' . ($file->getClientOriginalExtension() ?: 'jpg');
+                    $path = $file->storeAs('meals', $filename, 'public');
+                    $meal->update(['image' => $path]);
                 }
             });
 
@@ -612,4 +610,62 @@ class RestaurantsController extends Controller implements HasMiddleware
             ], 500);
         }
     }
+
+    /**
+     * Store a new meal option.
+     */
+    public function storeOption(Request $request, $mealId)
+    {
+        $meal = \Modules\Restaurants\Models\Meal::findOrFail($mealId);
+
+        $request->validate([
+            'name' => 'required_without:option_name|nullable|string|max:255',
+            'option_name' => 'required_without:name|nullable|string|max:255',
+            'price' => 'nullable|numeric|min:0',
+            'additional_price' => 'nullable|numeric|min:0',
+        ]);
+
+        $optionName = $request->input('name', $request->input('option_name'));
+        $additionalPrice = $request->input('price', $request->input('additional_price', 0));
+
+        $option = \Modules\Restaurants\Models\MealOption::create([
+            'meal_id' => $meal->id,
+            'option_name' => $optionName,
+            'additional_price' => $additionalPrice,
+        ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'status' => true,
+                'message' => __('Meal option added successfully.'),
+                'data' => [
+                    'id' => $option->id,
+                    'meal_id' => $option->meal_id,
+                    'name' => $option->option_name,
+                    'price' => (float) $option->additional_price,
+                ]
+            ], 201);
+        }
+
+        return back()->with('success', __('Meal option added successfully.'));
+    }
+
+    /**
+     * Destroy a meal option.
+     */
+    public function destroyOption($optionId)
+    {
+        $option = \Modules\Restaurants\Models\MealOption::findOrFail($optionId);
+        $option->delete();
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json([
+                'status' => true,
+                'message' => __('Meal option deleted successfully.')
+            ]);
+        }
+
+        return back()->with('success', __('Meal option deleted successfully.'));
+    }
 }
+

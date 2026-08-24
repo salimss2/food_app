@@ -230,6 +230,15 @@
                                 </svg>
                                 {{ __('Orders') }}
                             </button>
+
+                            <button onclick="switchTab('menu')" id="tab-menu"
+                                class="tab-btn shrink-0 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition-all focus:outline-none flex items-center">
+                                <svg class="w-4 h-4 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                                {{ __('Menu Preview') }}
+                            </button>
                         </div>
 
                         <!-- Tabs Content -->
@@ -319,93 +328,80 @@
 
                             <!-- Tab: Menu Preview -->
                             <div id="content-menu" class="tab-content hidden-el transition-opacity duration-300">
-                                <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                                    <div
-                                        class="flex flex-wrap items-center gap-4 w-full justify-between sm:justify-start">
-                                        <div class="inline-flex space-x-reverse space-x-2">
-                                            <button onclick="filterMeals('all')"
-                                                class="bg-gray-100 text-gray-900 px-3 py-1.5 rounded-full text-xs font-bold ring-1 ring-gray-200">{{ __('All Items') }}</button>
-                                            @foreach($restaurant->mealCategories as $category)
-                                                <button onclick="filterMeals({{ $category->id }})"
-                                                    class="text-gray-500 hover:text-gray-900 px-3 py-1.5 text-xs font-bold transition-colors flex items-center">
-                                                    <img src="{{ $category->image ?? 'https://ui-avatars.com/api/?name=' . urlencode($category->name) . '&color=7F9CF5&background=EBF4FF' }}"
-                                                        class="w-6 h-6 rounded-full object-cover inline-block ml-2"
-                                                        alt="{{ $category->name }}">
-                                                    {{ $category->name }}
-                                                </button>
-                                            @endforeach
-                                        </div>
-
-                                        <div class="flex gap-2">
-                                            {{-- Add New Category Button --}}
-                                            <button onclick="openModal('addCategoryModal')"
-                                                class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center transition shadow-sm">
-                                                <svg class="w-4 h-4 me-2" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2" d="M12 4v16m8-8H4" />
-                                                </svg>
-                                                {{ __('إضافة فئة جديدة') }}
+                                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+                                    {{-- Sub-category Pills --}}
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <button onclick="filterCategory('all')"
+                                            class="category-pill bg-indigo-600 text-white px-4 py-2 rounded-full text-xs font-bold transition shadow-sm flex items-center gap-2">
+                                            {{ __('All Items') }}
+                                        </button>
+                                        @foreach($categories as $category)
+                                            <button onclick="filterCategory({{ $category->id }})"
+                                                class="category-pill bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-2">
+                                                <img src="{{ $category->image_url ?? ($category->image ? \Illuminate\Support\Facades\Storage::url($category->image) : 'https://ui-avatars.com/api/?name=' . urlencode($category->name) . '&color=7F9CF5&background=EBF4FF') }}"
+                                                    class="w-6 h-6 rounded-full object-cover shadow-sm"
+                                                    alt="{{ $category->name }}"
+                                                    onerror="this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent('{{ $category->name }}') + '&color=7F9CF5&background=EBF4FF'">
+                                                <span>{{ $category->name }}</span>
                                             </button>
-
-                                            {{-- Add New Meal Button --}}
-                                            <button onclick="openModal('addMealModal')"
-                                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center transition shadow-sm">
-                                                <svg class="w-4 h-4 me-2" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2" d="M12 4v16m8-8H4" />
-                                                </svg>
-                                                {{ __('إضافة وجبة جديدة') }}
-                                            </button>
-                                        </div>
+                                        @endforeach
                                     </div>
-                                    <div class="relative w-full sm:w-64">
-                                        <input type="text" placeholder="{{ __('Search menu...') }}"
-                                            class="w-full ps-9 pe-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-all">
-                                        <svg class="w-4 h-4 text-gray-400 absolute start-3 top-2.5" fill="none"
-                                            stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                        </svg>
+
+                                    {{-- Side-by-side Action Buttons --}}
+                                    <div class="flex items-center gap-3 shrink-0">
+                                        <button onclick="openModal('addCategoryModal')"
+                                            class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center transition shadow-sm">
+                                            <svg class="w-4 h-4 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            {{ __('+ إضافة فئة جديدة') }}
+                                        </button>
+
+                                        <button onclick="openModal('addMealModal')"
+                                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center transition shadow-sm">
+                                            <svg class="w-4 h-4 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            {{ __('+ إضافة وجبة جديدة') }}
+                                        </button>
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                                {{-- Meals Grid --}}
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     @forelse($restaurant->meals as $meal)
                                         <div class="meal-card group bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow relative"
                                             data-category-id="{{ $meal->meal_category_id }}">
                                             <div class="relative">
-                                                <img src="{{ $meal->image }}" class="w-full h-32 object-cover"
+                                                <img src="{{ $meal->image_url ?? $meal->image }}" class="w-full h-36 object-cover"
                                                     alt="{{ $meal->name }}"
                                                     onerror="this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=200&fit=crop'">
 
                                                 {{-- Action Buttons --}}
-                                                <div
-                                                    class="absolute top-2 left-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onclick="openEditMealModal('{{ base64_encode($meal->toJson()) }}')"
-                                                        class="bg-white/90 backdrop-blur p-1.5 rounded-lg shadow-sm hover:bg-indigo-50 text-indigo-600 transition"
-                                                        title="{{ __('Edit') }}">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                            viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                <div class="absolute top-2 left-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onclick="openOptionsModal({{ $meal->id }}, '{{ addslashes($meal->name) }}', '{{ base64_encode($meal->options->toJson()) }}')"
+                                                        class="bg-white/90 backdrop-blur p-1.5 rounded-lg shadow-sm hover:bg-emerald-50 text-emerald-600 transition"
+                                                        title="{{ __('خيارات الوجبة') }}">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                                                         </svg>
                                                     </button>
-                                                    <form action="{{ route('admin.meals.destroy', $meal->id) }}"
-                                                        method="POST"
+                                                    <button onclick="openEditMealModal('{{ base64_encode($meal->toJson()) }}')"
+                                                        class="bg-white/90 backdrop-blur p-1.5 rounded-lg shadow-sm hover:bg-indigo-50 text-indigo-600 transition"
+                                                        title="{{ __('Edit') }}">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                    </button>
+                                                    <form action="{{ route('admin.meals.destroy', $meal->id) }}" method="POST"
                                                         onsubmit="return confirm('{{ __('هل أنت متأكد من حذف هذه الوجبة نهائياً؟') }}');">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit"
                                                             class="bg-white/90 backdrop-blur p-1.5 rounded-lg shadow-sm hover:bg-red-50 text-red-600 transition"
                                                             title="{{ __('Delete') }}">
-                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                                viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                                    stroke-width="2"
-                                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                             </svg>
                                                         </button>
                                                     </form>
@@ -413,18 +409,23 @@
                                             </div>
                                             <div class="p-4">
                                                 <div class="flex justify-between items-start mb-2 text-balance">
-                                                    <h5 class="font-bold text-gray-900">{{ $meal->name }}</h5>
-                                                    <span
-                                                        class="text-indigo-600 font-bold">${{ number_format($meal->price, 2) }}</span>
+                                                    <h5 class="font-bold text-gray-900 text-base">{{ $meal->name }}</h5>
+                                                    <span class="text-indigo-600 font-bold">${{ number_format($meal->price, 2) }}</span>
                                                 </div>
                                                 <p class="text-xs text-gray-500 line-clamp-2 mb-4">
                                                     {{ $meal->description }}
                                                 </p>
                                                 <div class="flex justify-between items-center border-t border-gray-50 pt-3">
-                                                    <span id="status-text-{{ $meal->id }}"
-                                                        class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {{ $meal->available ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600' }}">
-                                                        {{ $meal->available ? __('Available') : __('Unavailable') }}
-                                                    </span>
+                                                    <div class="flex items-center">
+                                                        <button onclick="openOptionsModal({{ $meal->id }}, '{{ addslashes($meal->name) }}', '{{ base64_encode($meal->options->toJson()) }}')"
+                                                            class="text-[10px] font-bold text-indigo-600 uppercase hover:underline me-2">
+                                                            {{ __('خيارات الوجبة') }} (<span id="options-count-{{ $meal->id }}">{{ $meal->options->count() }}</span>)
+                                                        </button>
+                                                        <span id="status-text-{{ $meal->id }}"
+                                                            class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {{ $meal->available ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600' }}">
+                                                            {{ $meal->available ? __('Available') : __('Unavailable') }}
+                                                        </span>
+                                                    </div>
                                                     <button id="toggle-btn-{{ $meal->id }}"
                                                         onclick="toggleMealAvailability({{ $meal->id }})"
                                                         class="text-[10px] font-bold uppercase hover:underline {{ $meal->available ? 'text-red-600' : 'text-green-600' }}">
@@ -438,7 +439,7 @@
                                             {{ __("No meals found for this restaurant.") }}
                                         </div>
                                     @endforelse
-                                  </div>
+                                </div>
                             </div>
 
                             <!-- Tab: Orders -->
@@ -578,7 +579,7 @@
                                 <select name="category_id" id="edit_meal_category_id" required
                                     class="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none">
                                     <option value="" disabled>{{ __('اختر الفئة...') }}</option>
-                                    @foreach($restaurant->mealCategories as $category)
+                                    @foreach($categories as $category)
                                         <option value="{{ $category->id }}">{{ $category->name }}</option>
                                     @endforeach
                                 </select>
@@ -642,10 +643,10 @@
                             <div>
                                 <label
                                     class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{{ __('فئة الوجبة') }}</label>
-                                <select name="category_id" required
+                                <select name="meal_category_id" required
                                     class="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none">
                                     <option value="" disabled selected>{{ __('اختر الفئة...') }}</option>
-                                    @foreach($restaurant->mealCategories as $category)
+                                    @foreach($categories as $category)
                                         <option value="{{ $category->id }}">{{ $category->name }}</option>
                                     @endforeach
                                 </select>
@@ -765,20 +766,85 @@
         </div>
     </div>
 
+    <!-- Meal Options Management Modal -->
+    <div id="optionsModal" class="relative z-50 hidden-el" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity modal-overlay" onclick="closeModal('optionsModal')"></div>
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg modal-content">
+                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4 border-b border-gray-100 flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-gray-900" id="optionsModalTitle">{{ __('خيارات الوجبة') }}</h3>
+                        <button onclick="closeModal('optionsModal')" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="p-6 space-y-6">
+                        <!-- Add Option Form -->
+                        <form id="addOptionForm" onsubmit="submitAddOption(event)" class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                            <input type="hidden" id="option_meal_id" value="">
+                            <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{{ __('إضافة خيار جديد') }}</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-600 mb-1">{{ __('اسم الخيار (مثال: حجم كبير)') }}</label>
+                                    <input type="text" id="new_option_name" required placeholder="{{ __('اسم الخيار') }}"
+                                        class="w-full border border-gray-300 rounded-lg p-2 text-xs focus:ring-1 focus:ring-primary outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-600 mb-1">{{ __('السعر الإضافي ($)') }}</label>
+                                    <input type="number" step="0.01" min="0" id="new_option_price" required placeholder="0.00" value="0.00"
+                                        class="w-full border border-gray-300 rounded-lg p-2 text-xs focus:ring-1 focus:ring-primary outline-none">
+                                </div>
+                            </div>
+                            <button type="submit" id="addOptionSubmitBtn"
+                                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-xs transition shadow-sm">
+                                {{ __('+ إضافة الخيار') }}
+                            </button>
+                        </form>
+
+                        <!-- Options List -->
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{{ __('الخيارات الحالية') }}</h4>
+                            <div id="optionsListContainer" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                <!-- Dynamic Options -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 px-6 py-3 flex justify-end">
+                        <button type="button" onclick="closeModal('optionsModal')"
+                            class="bg-white border border-gray-300 text-gray-700 py-1.5 px-5 rounded-lg font-bold text-xs hover:bg-gray-100 transition">
+                            {{ __('إغلاق') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="toast-container"></div>
 
     <script src="{{ asset('modules/admin/js/app.js') }}"></script>
     <script src="{{ asset('modules/admin/js/restaurant-details.js') }}"></script>
     <script>
-        function filterMeals(categoryId) {
-            const cards = document.querySelectorAll('.meal-card');
-            cards.forEach(card => {
+        function filterCategory(categoryId) {
+            document.querySelectorAll('.meal-card').forEach(card => {
                 if (categoryId === 'all' || card.dataset.categoryId == categoryId) {
                     card.classList.remove('hidden');
                 } else {
                     card.classList.add('hidden');
                 }
             });
+            // Update active pill button styling if present
+            document.querySelectorAll('.category-pill').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white');
+                btn.classList.add('bg-gray-100', 'text-gray-700');
+            });
+        }
+        function filterMeals(categoryId) {
+            filterCategory(categoryId);
         }
         function openEditMealModal(base64Meal) {
             try {
@@ -891,6 +957,148 @@
                 }
             };
         });
+
+        let currentModalMealId = null;
+
+        function openOptionsModal(mealId, mealName, base64Options) {
+            currentModalMealId = mealId;
+            document.getElementById('option_meal_id').value = mealId;
+            document.getElementById('optionsModalTitle').innerText = '{{ __("خيارات الوجبة: ") }}' + mealName;
+
+            let options = [];
+            try {
+                options = JSON.parse(atob(base64Options));
+            } catch (e) {
+                console.error('Error parsing meal options', e);
+            }
+
+            renderOptionsList(options);
+            openModal('optionsModal');
+        }
+
+        function renderOptionsList(options) {
+            const container = document.getElementById('optionsListContainer');
+            container.innerHTML = '';
+
+            if (!options || options.length === 0) {
+                container.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">{{ __("لا توجد خيارات مضافة لهذه الوجبة بعد.") }}</p>';
+                return;
+            }
+
+            options.forEach(opt => {
+                const name = opt.name || opt.option_name;
+                const price = parseFloat(opt.price !== undefined ? opt.price : opt.additional_price).toFixed(2);
+
+                const itemHtml = `
+                    <div id="option-item-${opt.id}" class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                        <div>
+                            <span class="font-bold text-sm text-gray-800">${name}</span>
+                            <span class="ms-2 text-xs font-semibold text-indigo-600">+${price} $</span>
+                        </div>
+                        <button onclick="deleteOption(${opt.id})" class="text-red-500 hover:text-red-700 p-1 rounded-lg hover:bg-red-50 transition" title="{{ __('حذف الخيار') }}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', itemHtml);
+            });
+        }
+
+        async function submitAddOption(event) {
+            event.preventDefault();
+            const mealId = document.getElementById('option_meal_id').value;
+            const name = document.getElementById('new_option_name').value.trim();
+            const price = document.getElementById('new_option_price').value;
+
+            if (!name) return;
+
+            const submitBtn = document.getElementById('addOptionSubmitBtn');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch(`/admin/meals/${mealId}/options`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ name: name, price: price })
+                });
+
+                const resData = await response.json();
+                if (response.ok && resData.status) {
+                    document.getElementById('new_option_name').value = '';
+                    document.getElementById('new_option_price').value = '0.00';
+
+                    const opt = resData.data;
+                    const container = document.getElementById('optionsListContainer');
+                    if (container.querySelector('p')) {
+                        container.innerHTML = '';
+                    }
+                    const itemHtml = `
+                        <div id="option-item-${opt.id}" class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                            <div>
+                                <span class="font-bold text-sm text-gray-800">${opt.name}</span>
+                                <span class="ms-2 text-xs font-semibold text-indigo-600">+${parseFloat(opt.price).toFixed(2)} $</span>
+                            </div>
+                            <button onclick="deleteOption(${opt.id})" class="text-red-500 hover:text-red-700 p-1 rounded-lg hover:bg-red-50 transition" title="{{ __('حذف الخيار') }}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', itemHtml);
+
+                    const countEl = document.getElementById(`options-count-${mealId}`);
+                    if (countEl) countEl.innerText = parseInt(countEl.innerText || 0) + 1;
+                } else {
+                    alert(resData.message || 'Error adding option');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error adding option');
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        async function deleteOption(optionId) {
+            if (!confirm('{{ __("هل أنت متأكد من حذف هذا الخيار؟") }}')) return;
+
+            try {
+                const response = await fetch(`/admin/meal-options/${optionId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
+
+                const resData = await response.json();
+                if (response.ok && resData.status) {
+                    const itemEl = document.getElementById(`option-item-${optionId}`);
+                    if (itemEl) itemEl.remove();
+
+                    const mealId = currentModalMealId;
+                    const countEl = document.getElementById(`options-count-${mealId}`);
+                    if (countEl) countEl.innerText = Math.max(0, parseInt(countEl.innerText || 1) - 1);
+
+                    const container = document.getElementById('optionsListContainer');
+                    if (!container.children.length) {
+                        container.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">{{ __("لا توجد خيارات مضافة لهذه الوجبة بعد.") }}</p>';
+                    }
+                } else {
+                    alert(resData.message || 'Error deleting option');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error deleting option');
+            }
+        }
     </script>
 </body>
 

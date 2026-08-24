@@ -138,9 +138,19 @@ class AdminOrderController extends Controller
      */
     public function show($id)
     {
-        $order = Order::with(['items.meal', 'user', 'restaurant', 'driver'])->findOrFail($id);
+        $order = Order::with([
+            'customer',
+            'user',
+            'restaurant',
+            'driver',
+            'items.meal',
+            'orderItems.meal'
+        ])->findOrFail($id);
 
-        return view('admin::orders.show', compact('order'));
+        $items = $order->items ?? $order->orderItems ?? collect();
+        $calculatedSubtotal = $items->sum(fn($item) => ($item->price ?? $item->unit_price ?? 0) * ($item->quantity ?? 1));
+
+        return view('admin::orders.show', compact('order', 'calculatedSubtotal'));
     }
 
     /**

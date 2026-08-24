@@ -29,7 +29,7 @@ class MealController extends Controller
             $query->where('meal_category_id', $request->category_id);
         }
 
-        $meals = $query->with(['category', 'variants'])->latest()->get();
+        $meals = $query->with(['category', 'variants', 'options'])->latest()->get();
 
         ob_clean();
         return response()->json([

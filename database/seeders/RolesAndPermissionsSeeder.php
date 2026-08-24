@@ -114,5 +114,6 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // ب) أدوار تسجل بنفسها مباشرة من التطبيق (sanctum فقط)
         Role::firstOrCreate(['name' => 'Customer', 'guard_name' => 'sanctum']);
+        
     }
 }

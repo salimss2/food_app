@@ -246,6 +246,8 @@ class AuthController extends Controller
                 'phone' => 'nullable|string',
                 'address' => 'nullable|string',
                 'location' => 'nullable|string',
+                'latitude' => 'nullable|numeric',
+                'longitude' => 'nullable|numeric',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096'
             ]);
 
@@ -267,6 +269,23 @@ class AuthController extends Controller
             }
             if ($request->has('location')) {
                 $profileData['location'] = $request->location;
+            }
+
+            // استخراج وتخزين الإحداثيات الرقمية (latitude & longitude)
+            $latitude = $request->filled('latitude') ? (float) $request->latitude : null;
+            $longitude = $request->filled('longitude') ? (float) $request->longitude : null;
+
+            if (($latitude === null || $longitude === null) && $request->filled('location')) {
+                $parsed = \Modules\Users\Http\Controllers\ProfileController::parseCoordinates($request->location);
+                if ($parsed) {
+                    $latitude = $parsed['latitude'];
+                    $longitude = $parsed['longitude'];
+                }
+            }
+
+            if ($latitude !== null && $longitude !== null) {
+                $profileData['latitude'] = $latitude;
+                $profileData['longitude'] = $longitude;
             }
 
             // 3. معالجة رفع الصورة (avatar)
