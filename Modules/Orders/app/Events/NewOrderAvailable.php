@@ -15,13 +15,15 @@ class NewOrderAvailable implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $order;
+    public array $metaData;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(Order $order)
+    public function __construct(Order $order, array $metaData = [])
     {
         $this->order = $order->loadMissing('restaurant');
+        $this->metaData = $metaData;
     }
 
     /**
@@ -48,12 +50,14 @@ class NewOrderAvailable implements ShouldBroadcastNow
      */
     public function broadcastWith(): array
     {
-        return [
+        return array_merge([
             'order_id' => $this->order->id,
+            'group_id' => $this->order->group_id,
+            'is_multi_vendor' => $this->order->isMultiVendorOrder(),
             'pickup_location' => $this->order->restaurant->name ?? 'Unknown',
-            'total' => (float) $this->order->total,
+            'total' => (float) ($this->order->total_amount ?? $this->order->total_price ?? $this->order->total ?? 0),
             'status' => $this->order->status,
             'created_at' => $this->order->created_at?->toISOString(),
-        ];
+        ], $this->metaData);
     }
 }

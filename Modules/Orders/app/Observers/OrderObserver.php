@@ -51,6 +51,19 @@ class OrderObserver
                 'status' => $order->status,
                 'description' => $description
             ]);
+
+            // Sync group cancellation status when a sub-order is canceled
+            if (in_array(strtolower($order->status), ['canceled', 'cancelled']) && !empty($order->group_id)) {
+                $allGroupOrders = Order::where('group_id', $order->group_id)->get();
+                $allCanceled = $allGroupOrders->every(fn($o) => in_array(strtolower($o->status), ['canceled', 'cancelled']));
+
+                if ($allCanceled) {
+                    Order::where('group_id', $order->group_id)->update([
+                        'payment_status' => 'canceled',
+                    ]);
+                    \Illuminate\Support\Facades\Log::info("All sub-orders in group {$order->group_id} canceled. Group payment status synchronized to canceled.");
+                }
+            }
         }
 
         if ($order->isDirty('driver_id') && $order->driver_id) {

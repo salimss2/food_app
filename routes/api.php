@@ -13,6 +13,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/update-fcm-token', [AuthController::class, 'updateFcmToken']);
     Route::post('/v1/update-fcm-token', [AuthController::class, 'updateFcmToken']);
 
+    Route::post('/v1/ratings', [\App\Http\Controllers\Api\RatingController::class, 'store']);
+    Route::post('/v1/support/tickets', [\App\Http\Controllers\Api\SupportTicketController::class, 'store']);
+
     Route::prefix('notifications')->group(function () {
         Route::get('/', [NotificationController::class, 'index']);
         Route::post('/{id}/mark-as-read', [NotificationController::class, 'markAsRead']);
@@ -25,8 +28,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/toggle-restaurant', [FavoriteController::class, 'toggleRestaurant']);
     });
 
-
-
 });
 
 Route::post('/delivery/calculate-fee', [\App\Http\Controllers\Api\DeliveryCalculationController::class, 'calculate']);
@@ -37,6 +38,11 @@ Route::prefix('v1')->group(function () {
     Route::get('/search', [SearchController::class, 'search']);
     Route::get('/privacy-policy', [SettingController::class, 'getPrivacyPolicy']);
     Route::get('/about-app', [SettingController::class, 'getAboutAppData']);
+
+    Route::prefix('admin/ratings')->group(function () {
+        Route::get('/analytics', [\App\Http\Controllers\Admin\RatingManagementController::class, 'analytics']);
+        Route::get('/', [\App\Http\Controllers\Admin\RatingManagementController::class, 'index']);
+    });
 });
 
 Route::get('/setup-database', function () {

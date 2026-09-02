@@ -43,6 +43,8 @@ class ProcessScheduledOrders extends Command
                     $orderNumber = 'ORD-' . strtoupper(\Illuminate\Support\Str::random(10));
                 } while (\Modules\Orders\Models\Order::where('order_number', $orderNumber)->exists());
 
+                $grandTotal = round((float) $scheduledOrder->total_amount + (float) $scheduledOrder->delivery_fee, 2);
+
                 // 1. Convert to a real active order
                 $newOrder = \Modules\Orders\Models\Order::create([
                     'order_number' => $orderNumber,
@@ -51,7 +53,8 @@ class ProcessScheduledOrders extends Command
                     'restaurant_id' => $scheduledOrder->restaurant_id,
                     'driver_id' => null,
                     'payment_method' => 'cod',
-                    'total' => $scheduledOrder->total_amount,
+                    'total' => $grandTotal,
+                    'total_price' => $grandTotal,
                     'status' => 'pending_driver_acceptance',
                     'payment_status' => 'pending_collection',
                     'scheduled_at' => $scheduledOrder->scheduled_at,
@@ -66,11 +69,23 @@ class ProcessScheduledOrders extends Command
                 // 2. Recreate OrderItems from the snapshot
                 $items = $scheduledOrder->items_content ?? [];
                 foreach ($items as $item) {
+                    $qty = (int) ($item['quantity'] ?? 1);
+                    $sub = (float) ($item['subtotal'] ?? 0);
+                    $unitPrice = isset($item['price']) ? (float) $item['price'] : ($qty > 0 ? $sub / $qty : $sub);
+
                     \Modules\Orders\Models\OrderItem::create([
-                        'order_id' => $newOrder->id,
-                        'meal_id' => $item['meal_id'],
-                        'quantity' => $item['quantity'],
-                        'subtotal' => $item['subtotal'],
+                        'order_id'       => $newOrder->id,
+                        'meal_id'        => $item['meal_id'] ?? null,
+                        'variant_id'     => $item['variant_id'] ?? null,
+                        'variant_name'   => $item['variant_name'] ?? null,
+                        'offer_id'       => $item['offer_id'] ?? null,
+                        'name'           => $item['name'] ?? null,
+                        'type'           => $item['type'] ?? 'regular_meal',
+                        'quantity'       => $qty,
+                        'price'          => $unitPrice,
+                        'subtotal'       => $sub,
+                        'customizations' => $item['customizations'] ?? null,
+                        'combo_meals'    => $item['combo_meals'] ?? null,
                     ]);
                 }
 

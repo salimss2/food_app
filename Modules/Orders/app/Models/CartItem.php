@@ -19,8 +19,13 @@ class CartItem extends Model
         'cart_id',
         'meal_id',
         'offer_id',
+        'customizations',
         'quantity',
         'subtotal',
+    ];
+
+    protected $casts = [
+        'customizations' => 'array',
     ];
 
     public function cart()

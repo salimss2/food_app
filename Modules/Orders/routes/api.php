@@ -11,6 +11,7 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
     // --- Customer order routes ---
     Route::get('orders/{id}/track', [OrdersController::class, 'track']);
     Route::post('orders/{id}/review', [OrdersController::class, 'review']);
+    Route::post('orders/{id}/cancel', [OrdersController::class, 'cancelOrder']);
     Route::apiResource('orders', OrdersController::class)->names('orders');
 
     // --- Cart routes ---

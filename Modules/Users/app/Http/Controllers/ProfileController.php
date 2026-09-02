@@ -138,6 +138,10 @@ class ProfileController extends Controller
             $updateData
         );
 
+        // Clear stale cart quotes & delivery cache
+        \Illuminate\Support\Facades\Cache::forget("user_cart_delivery_{$user->id}");
+        \Illuminate\Support\Facades\Cache::forget("cart_quote_{$user->id}");
+
         return response()->json([
             'status' => true,
             'message' => 'تم تحديث الموقع في الملف الشخصي بنجاح',

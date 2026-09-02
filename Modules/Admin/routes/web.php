@@ -187,6 +187,16 @@ Route::prefix('admin')->group(function () {
     Route::get('/feedback', function () {
         return view('admin::feedback');
     })->name('admin.feedback.index');
+    Route::get('/feedback/alias', function () {
+        return view('admin::feedback');
+    })->name('admin.feedback');
+    Route::get('/tickets', [\App\Http\Controllers\Admin\SupportTicketManagementController::class, 'indexView'])->name('admin.tickets');
+    Route::get('/tickets/index', [\App\Http\Controllers\Admin\SupportTicketManagementController::class, 'indexView'])->name('admin.tickets.index');
+    Route::get('/api/support/tickets', [\App\Http\Controllers\Admin\SupportTicketManagementController::class, 'getStatsAndTickets']);
+    Route::post('/api/support/tickets/{id}/respond', [\App\Http\Controllers\Admin\SupportTicketManagementController::class, 'respond']);
+    Route::delete('/api/support/tickets/{id}', [\App\Http\Controllers\Admin\SupportTicketManagementController::class, 'destroy']);
+    Route::get('/api/ratings/analytics', [\App\Http\Controllers\Admin\RatingManagementController::class, 'analytics']);
+    Route::get('/api/ratings', [\App\Http\Controllers\Admin\RatingManagementController::class, 'index']);
     Route::get('/revenue', function () {
         return view('admin::revenue');
     })->name('admin.revenue.index');

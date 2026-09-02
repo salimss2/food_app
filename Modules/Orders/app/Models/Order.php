@@ -53,6 +53,11 @@ class Order extends Model
         return $this->hasOne(OrderReview::class, 'order_id');
     }
 
+    public function rating()
+    {
+        return $this->hasOne(\App\Models\OrderRating::class, 'order_id');
+    }
+
     /**
      * العلاقة: الطلب ينتمي لتسوية مالية واحدة.
      */
@@ -123,5 +128,35 @@ class Order extends Model
     {
         // الطلب الواحد له مهمة توصيل واحدة
         return $this->hasOne(\Modules\Delivery\Models\DeliveryTask::class, 'order_id');
+    }
+
+    /**
+     * Get all sibling sub-orders created in the same multi-vendor checkout.
+     */
+    public function groupSiblingOrders()
+    {
+        return $this->hasMany(Order::class, 'group_id', 'group_id')
+                    ->where('id', '!=', $this->id);
+    }
+
+    /**
+     * Check if the order is part of a multi-restaurant order group.
+     */
+    public function isMultiVendorOrder(): bool
+    {
+        return !empty($this->group_id) && Order::where('group_id', $this->group_id)->count() > 1;
+    }
+
+    /**
+     * Get the total financial sum of the entire order group.
+     */
+    public function getGroupGrandTotalAttribute(): float
+    {
+        if (empty($this->group_id)) {
+            return (float) ($this->total ?? $this->total_price ?? 0);
+        }
+        return (float) Order::where('group_id', $this->group_id)
+            ->selectRaw('SUM(COALESCE(total, total_price, 0)) as total_sum')
+            ->value('total_sum');
     }
 }

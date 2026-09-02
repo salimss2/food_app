@@ -27,14 +27,28 @@ class OrdersController extends Controller
     // =========================================================================
     public function index(Request $request)
     {
-        $orders = Order::with(['items.meal', 'items.offer', 'restaurant', 'user.profile'])
+        $orders = Order::with(['items.meal', 'items.offer', 'restaurant', 'driver', 'user.profile'])
             ->where('user_id', $request->user()->id)
             ->latest()
             ->get();
 
+        $groupedOrders = $orders->groupBy(function ($order) {
+            return $order->group_id ?? ('single_' . $order->id);
+        })->map(function ($group) {
+            $first = $group->first();
+            return [
+                'group_id' => $first->group_id,
+                'is_multi_vendor' => !empty($first->group_id) && count($group) > 1,
+                'group_grand_total' => (float) $group->sum(fn($o) => (float) ($o->total_amount ?? $o->total_price ?? $o->total ?? 0)),
+                'sub_orders_count' => count($group),
+                'sub_orders' => OrderResource::collection($group),
+            ];
+        })->values();
+
         return response()->json([
             'status' => true,
             'data' => OrderResource::collection($orders),
+            'grouped_orders' => $groupedOrders,
         ]);
     }
 
@@ -263,16 +277,21 @@ class OrdersController extends Controller
             }
         }
 
-        // إرجاع خطأ شفاف 422 في حال غياب موقع الزبون
+        // +++ 1.1 fallback if coordinates are missing +++
         if ($latitude === null || $longitude === null) {
-            return response()->json([
-                'status' => false,
-                'message' => 'يرجى تحديد موقع التوصيل الخاص بك'
-            ], 422);
+            Log::info("Customer location missing; proceeding with default fallback base distance (2.0 km).");
         }
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
         $paymentMethod = $request->input('payment_method', 'cod');
+
+        // Support stringified JSON items payload (common in multipart/form-data requests)
+        if ($request->has('items') && is_string($request->input('items'))) {
+            $decodedItems = json_decode($request->input('items'), true);
+            if (is_array($decodedItems)) {
+                $request->merge(['items' => $decodedItems]);
+            }
+        }
 
         // --- 1. Validation ---
         $request->validate([
@@ -430,20 +449,66 @@ class OrdersController extends Controller
 
                     // --- Meal Options / Add-ons Logic ---
                     $selectedOptions = [];
-                    $optionsPriceSum = 0;
+                    $optionsPriceSum = 0.0;
+
+                    // Normalize stringified option arrays (common in multipart requests)
+                    if (!empty($itemData['option_ids']) && is_string($itemData['option_ids'])) {
+                        $decoded = json_decode($itemData['option_ids'], true);
+                        $itemData['option_ids'] = is_array($decoded) ? $decoded : array_map('trim', explode(',', $itemData['option_ids']));
+                    }
+                    if (!empty($itemData['options']) && is_string($itemData['options'])) {
+                        $decoded = json_decode($itemData['options'], true);
+                        if (is_array($decoded)) {
+                            $itemData['options'] = $decoded;
+                        }
+                    }
+                    if (!empty($itemData['customizations']) && is_string($itemData['customizations'])) {
+                        $decoded = json_decode($itemData['customizations'], true);
+                        if (is_array($decoded)) {
+                            $itemData['customizations'] = $decoded;
+                        }
+                    }
 
                     $optionIds = [];
                     if (!empty($itemData['option_ids']) && is_array($itemData['option_ids'])) {
-                        $optionIds = $itemData['option_ids'];
-                    } elseif (!empty($itemData['options']) && is_array($itemData['options'])) {
-                        foreach ($itemData['options'] as $opt) {
-                            if (is_array($opt) && isset($opt['id'])) {
-                                $optionIds[] = $opt['id'];
-                            } elseif (is_numeric($opt)) {
-                                $optionIds[] = $opt;
+                        foreach ($itemData['option_ids'] as $opt) {
+                            if (is_numeric($opt)) {
+                                $optionIds[] = (int) $opt;
+                            } elseif (is_array($opt) && isset($opt['id'])) {
+                                $optionIds[] = (int) $opt['id'];
                             }
                         }
                     }
+
+                    if (!empty($itemData['options']) && is_array($itemData['options'])) {
+                        foreach ($itemData['options'] as $opt) {
+                            if (is_numeric($opt)) {
+                                $optionIds[] = (int) $opt;
+                            } elseif (is_array($opt)) {
+                                if (isset($opt['id'])) {
+                                    $optionIds[] = (int) $opt['id'];
+                                } elseif (isset($opt['option_id'])) {
+                                    $optionIds[] = (int) $opt['option_id'];
+                                }
+                            }
+                        }
+                    }
+
+                    if (!empty($itemData['customizations']) && is_array($itemData['customizations'])) {
+                        foreach ($itemData['customizations'] as $opt) {
+                            if (is_numeric($opt)) {
+                                $optionIds[] = (int) $opt;
+                            } elseif (is_array($opt)) {
+                                if (isset($opt['id'])) {
+                                    $optionIds[] = (int) $opt['id'];
+                                } elseif (isset($opt['option_id'])) {
+                                    $optionIds[] = (int) $opt['option_id'];
+                                }
+                            }
+                        }
+                    }
+
+                    $optionIds = array_unique(array_filter($optionIds));
 
                     if (!empty($optionIds)) {
                         $optionsRecords = \Modules\Restaurants\Models\MealOption::whereIn('id', $optionIds)
@@ -538,7 +603,7 @@ class OrdersController extends Controller
             // Cart-based checkout logic
             /** @var Cart|null $cart */
             $cart = Cart::where('user_id', $user->id)->first();
-            $items = $cart ? CartItem::with('meal')->where('cart_id', $cart->id)->get() : collect();
+            $items = $cart ? CartItem::with(['meal', 'offer.meals'])->where('cart_id', $cart->id)->get() : collect();
 
             if (!$cart || $items->isEmpty()) {
                 return response()->json([
@@ -547,48 +612,112 @@ class OrdersController extends Controller
             }
 
             $groupedItems = $items->groupBy(function ($item) {
-                return $item->meal->restaurant_id;
+                return $item->meal ? $item->meal->restaurant_id : ($item->offer ? $item->offer->restaurant_id : null);
             })->map(function ($restaurantItems) {
                 return $restaurantItems->map(function ($item) {
-                    $meal = $item->meal;
-
-                    $now = now();
-                    $hasActiveDiscount = $meal->discount_type &&
-                        $meal->discount_value !== null &&
-                        ($meal->discount_start === null || $now >= $meal->discount_start) &&
-                        ($meal->discount_end === null || $now <= $meal->discount_end);
-
-                    $price = (float) $meal->price;
-                    $type = 'regular_meal';
-
-                    if ($hasActiveDiscount) {
-                        $type = 'discounted_meal';
-                        if ($meal->discount_type === 'percentage') {
-                            $discountAmount = ($meal->price * $meal->discount_value) / 100;
-                            $price = max(0, (float) ($meal->price - $discountAmount));
-                        } elseif ($meal->discount_type === 'fixed') {
-                            $price = max(0, (float) ($meal->price - $meal->discount_value));
-                        }
-                    }
-
                     $quantity = (int) $item->quantity;
-                    $subtotal = $price * $quantity;
+                    $subtotal = (float) $item->subtotal;
 
-                    return (object) [
-                        'meal_id' => $meal->id,
-                        'variant_id' => null,
-                        'variant_name' => null,
-                        'offer_id' => null,
-                        'name' => $meal->name,
-                        'type' => $type,
-                        'quantity' => $quantity,
-                        'price' => $price,
-                        'subtotal' => $subtotal,
-                        'combo_meals' => null,
-                    ];
+                    if ($item->meal) {
+                        $meal = $item->meal;
+                        $unitPrice = $quantity > 0 ? ($subtotal / $quantity) : (float) $meal->price;
+
+                        $now = now();
+                        $hasActiveDiscount = $meal->discount_type &&
+                            $meal->discount_value !== null &&
+                            ($meal->discount_start === null || $now >= $meal->discount_start) &&
+                            ($meal->discount_end === null || $now <= $meal->discount_end);
+
+                        $type = $hasActiveDiscount ? 'discounted_meal' : 'regular_meal';
+
+                        return (object) [
+                            'meal_id' => $meal->id,
+                            'variant_id' => null,
+                            'variant_name' => null,
+                            'offer_id' => null,
+                            'name' => $meal->name,
+                            'type' => $type,
+                            'quantity' => $quantity,
+                            'price' => $unitPrice,
+                            'subtotal' => $subtotal,
+                            'customizations' => $item->customizations ?? null,
+                            'combo_meals' => null,
+                        ];
+                    } elseif ($item->offer) {
+                        $offer = $item->offer;
+                        $comboMeals = $offer->meals ? $offer->meals->map(function ($m) {
+                            return [
+                                'name' => $m->name,
+                                'quantity' => (int) ($m->pivot->quantity ?? 1),
+                            ];
+                        })->toArray() : null;
+
+                        return (object) [
+                            'meal_id' => null,
+                            'variant_id' => null,
+                            'variant_name' => null,
+                            'offer_id' => $offer->id,
+                            'name' => $offer->title,
+                            'type' => 'combo_offer',
+                            'quantity' => $quantity,
+                            'price' => (float) $offer->combo_price,
+                            'subtotal' => (float) $subtotal,
+                            'customizations' => null,
+                            'combo_meals' => $comboMeals,
+                        ];
+                    }
                 });
             });
         }
+
+        // --- Calculate Multi-Restaurant Delivery Fee (Distance + Extra Stop Fee) ---
+        $restaurantCount = max(1, $groupedItems->count());
+        $restaurantDistances = [];
+
+        foreach ($groupedItems as $rId => $rItems) {
+            $rModel = \App\Models\Restaurant::find($rId);
+            $rLat = ($rModel && !is_null($rModel->latitude)) ? (float) $rModel->latitude : null;
+            $rLng = ($rModel && !is_null($rModel->longitude)) ? (float) $rModel->longitude : null;
+
+            if (!is_null($rLat) && !is_null($rLng) && !is_null($latitude) && !is_null($longitude)) {
+                $earthRadius = 6371;
+                $latFrom = deg2rad((float) $latitude);
+                $lonFrom = deg2rad((float) $longitude);
+                $latTo = deg2rad($rLat);
+                $lonTo = deg2rad($rLng);
+
+                $latDelta = $latTo - $latFrom;
+                $lonDelta = $lonTo - $lonFrom;
+
+                $a = sin($latDelta / 2) * sin($latDelta / 2) + cos($latFrom) * cos($latTo) * sin($lonDelta / 2) * sin($lonDelta / 2);
+                $c = 2 * atan2(sqrt(max(0, min(1, $a))), sqrt(max(0, min(1, 1 - $a))));
+                $restaurantDistances[$rId] = round($earthRadius * $c, 2);
+            } else {
+                $restaurantDistances[$rId] = 2.0; // Fallback default base distance
+            }
+        }
+
+        $maxDeliveryDistance = !empty($restaurantDistances) ? max($restaurantDistances) : 2.0;
+
+        $distanceSlab = \App\Models\DistanceSlab::where('min_distance', '<=', $maxDeliveryDistance)
+            ->where('max_distance', '>=', $maxDeliveryDistance)
+            ->first() ?? \App\Models\DistanceSlab::orderBy('max_distance', 'desc')->first() ?? \App\Models\DistanceSlab::first();
+
+        if ($distanceSlab) {
+            $baseDeliveryFee = (float) $distanceSlab->total_fee;
+            $driverCommission = (float) $distanceSlab->driver_share;
+            $platformCommission = (float) $distanceSlab->platform_share;
+        } else {
+            $baseDeliveryFee = 10.0;
+            $driverCommission = 7.0;
+            $platformCommission = 3.0;
+        }
+
+        $extraStopFee = ($restaurantCount > 1) ? ($restaurantCount - 1) * 1000.00 : 0.00;
+        $totalAggregatedDeliveryFee = $baseDeliveryFee + $extraStopFee;
+
+        // Split delivery fee among sub-orders (with remainder assigned to the last sub-order)
+        $splitDeliveryFee = round($totalAggregatedDeliveryFee / $restaurantCount, 2);
 
         // =====================================================================
         // CASE A: طلب مجدول (Scheduled Order)
@@ -596,10 +725,23 @@ class OrdersController extends Controller
         if ($request->filled('scheduled_at')) {
             Log::info("Processing as Scheduled Order", ['scheduled_at' => $scheduledAt]);
 
-            $scheduledOrders = DB::transaction(function () use ($user, $cart, $groupedItems, $scheduledAt, $latitude, $longitude) {
+            $scheduledOrders = DB::transaction(function () use ($user, $cart, $groupedItems, $scheduledAt, $latitude, $longitude, $restaurantCount, $restaurantDistances, $totalAggregatedDeliveryFee, $splitDeliveryFee, $driverCommission, $platformCommission) {
                 $results = [];
+                $allocatedFeeSum = 0.0;
+                $currentIndex = 0;
 
                 foreach ($groupedItems as $restaurantId => $restaurantItems) {
+                    $currentIndex++;
+                    $isLast = ($currentIndex === $restaurantCount);
+
+                    if ($isLast) {
+                        $subOrderDeliveryFee = round($totalAggregatedDeliveryFee - $allocatedFeeSum, 2);
+                    } else {
+                        $subOrderDeliveryFee = $splitDeliveryFee;
+                        $allocatedFeeSum += $subOrderDeliveryFee;
+                    }
+
+                    $deliveryDistance = $restaurantDistances[$restaurantId] ?? 2.0;
                     $restaurantTotal = $restaurantItems->sum('subtotal');
                     $restaurantItemsCount = $restaurantItems->sum('quantity');
 
@@ -613,7 +755,9 @@ class OrdersController extends Controller
                             'name' => $item->name,
                             'type' => $item->type,
                             'quantity' => $item->quantity,
+                            'price' => (float) ($item->price ?? ($item->quantity > 0 ? $item->subtotal / $item->quantity : $item->subtotal)),
                             'subtotal' => (float) $item->subtotal,
+                            'customizations' => $item->customizations ?? null,
                             'combo_meals' => $item->combo_meals,
                         ];
                     })->toArray();
@@ -629,64 +773,6 @@ class OrdersController extends Controller
                         'order_number' => $orderNumber
                     ]);
 
-                    // نظام التسعير الديناميكي
-                    $restaurant = \App\Models\Restaurant::find($restaurantId);
-                    $restaurantLat = ($restaurant && !is_null($restaurant->latitude)) ? (float) $restaurant->latitude : null;
-                    $restaurantLng = ($restaurant && !is_null($restaurant->longitude)) ? (float) $restaurant->longitude : null;
-
-                    $deliveryDistance = 0.0;
-                    $deliveryFee = 0.0;
-                    $driverCommission = 0.0;
-                    $platformCommission = 0.0;
-
-                    if (!is_null($restaurantLat) && !is_null($restaurantLng) && !is_null($latitude) && !is_null($longitude)) {
-                        $earthRadius = 6371;
-                        $latFrom = deg2rad((float) $latitude);
-                        $lonFrom = deg2rad((float) $longitude);
-                        $latTo = deg2rad($restaurantLat);
-                        $lonTo = deg2rad($restaurantLng);
-
-                        $latDelta = $latTo - $latFrom;
-                        $lonDelta = $lonTo - $lonFrom;
-
-                        $a = sin($latDelta / 2) * sin($latDelta / 2) + cos($latFrom) * cos($latTo) * sin($lonDelta / 2) * sin($lonDelta / 2);
-                        $c = 2 * atan2(sqrt(max(0, min(1, $a))), sqrt(max(0, min(1, 1 - $a))));
-                        $deliveryDistance = round($earthRadius * $c, 2);
-
-                        $slab = \App\Models\DistanceSlab::where('min_distance', '<=', $deliveryDistance)
-                            ->where('max_distance', '>=', $deliveryDistance)
-                            ->first();
-
-                        if ($slab) {
-                            $deliveryFee = (float) $slab->total_fee;
-                            $driverCommission = (float) $slab->driver_share;
-                            $platformCommission = (float) $slab->platform_share;
-                        } else {
-                            Log::warning("Scheduled Order out of delivery range, applying fallback slab", ['distance' => $deliveryDistance]);
-                            $fallbackSlab = \App\Models\DistanceSlab::orderBy('max_distance', 'desc')->first()
-                                ?? \App\Models\DistanceSlab::first();
-                            if ($fallbackSlab) {
-                                $deliveryFee = (float) $fallbackSlab->total_fee;
-                                $driverCommission = (float) $fallbackSlab->driver_share;
-                                $platformCommission = (float) $fallbackSlab->platform_share;
-                            }
-                        }
-                    } else {
-                        Log::warning("Missing restaurant coordinates for scheduled order distance calculation; using default rate fallback", [
-                            'restaurant_id' => $restaurantId
-                        ]);
-                        $defaultSlab = \App\Models\DistanceSlab::first();
-                        if ($defaultSlab) {
-                            $deliveryFee = (float) $defaultSlab->total_fee;
-                            $driverCommission = (float) $defaultSlab->driver_share;
-                            $platformCommission = (float) $defaultSlab->platform_share;
-                        } else {
-                            $deliveryFee = 10.0;
-                            $driverCommission = 7.0;
-                            $platformCommission = 3.0;
-                        }
-                    }
-
                     $scheduledOrder = \Modules\Scheduling\Models\ScheduledOrder::create([
                         'user_id' => $user->id,
                         'restaurant_id' => $restaurantId,
@@ -699,7 +785,7 @@ class OrdersController extends Controller
                         'latitude' => $latitude,
                         'longitude' => $longitude,
                         'delivery_distance' => $deliveryDistance,
-                        'delivery_fee' => $deliveryFee,
+                        'delivery_fee' => $subOrderDeliveryFee,
                         'driver_commission' => $driverCommission,
                         'platform_commission' => $platformCommission,
                     ]);
@@ -759,11 +845,29 @@ class OrdersController extends Controller
 
         $groupId = Str::uuid()->toString();
 
-        $createdOrders = DB::transaction(function () use ($user, $cart, $groupedItems, $paymentMethod, $groupId, $receiptPath, $latitude, $longitude, $coupon, $totalDiscount, $cartSubtotal) {
+        $createdOrders = DB::transaction(function () use ($user, $cart, $groupedItems, $paymentMethod, $groupId, $receiptPath, $latitude, $longitude, $coupon, $totalDiscount, $cartSubtotal, $restaurantCount, $restaurantDistances, $totalAggregatedDeliveryFee, $splitDeliveryFee, $driverCommission, $platformCommission) {
             $orders = [];
+            $allocatedFeeSum = 0.0;
+            $currentIndex = 0;
 
             foreach ($groupedItems as $restaurantId => $restaurantItems) {
-                $restaurantTotal = $restaurantItems->sum('subtotal');
+                $currentIndex++;
+                $isLast = ($currentIndex === $restaurantCount);
+
+                if ($isLast) {
+                    $subOrderDeliveryFee = round($totalAggregatedDeliveryFee - $allocatedFeeSum, 2);
+                } else {
+                    $subOrderDeliveryFee = $splitDeliveryFee;
+                    $allocatedFeeSum += $subOrderDeliveryFee;
+                }
+
+                $deliveryDistance = $restaurantDistances[$restaurantId] ?? 2.0;
+
+                // 1. Calculate subtotal strictly from item unit prices (including customizations) * quantity
+                $subtotal = $restaurantItems->sum(function ($item) {
+                    $unitPrice = (float) ($item->price ?? ($item->subtotal / $item->quantity));
+                    return $unitPrice * (int) $item->quantity;
+                });
 
                 // Initialize status and payment_status based on payment method
                 $status = 'pending_driver_acceptance';
@@ -779,78 +883,15 @@ class OrdersController extends Controller
                     $orderNumber = 'ORD-' . strtoupper(Str::random(10));
                 } while (Order::where('order_number', $orderNumber)->exists());
 
-                // 1. جلب موقع المطعم
-                $restaurant = \App\Models\Restaurant::find($restaurantId);
-                $restaurantLat = ($restaurant && !is_null($restaurant->latitude)) ? (float) $restaurant->latitude : null;
-                $restaurantLng = ($restaurant && !is_null($restaurant->longitude)) ? (float) $restaurant->longitude : null;
-
-                $deliveryDistance = 0.0;
-                $deliveryFee = 0.0;
-                $driverCommission = 0.0;
-                $platformCommission = 0.0;
-
-                // 2. حساب المسافة (Haversine Formula) إذا كانت الإحداثيات متوفرة
-                if (!is_null($restaurantLat) && !is_null($restaurantLng) && !is_null($latitude) && !is_null($longitude)) {
-                    $earthRadius = 6371;
-                    $latFrom = deg2rad((float) $latitude);
-                    $lonFrom = deg2rad((float) $longitude);
-                    $latTo = deg2rad($restaurantLat);
-                    $lonTo = deg2rad($restaurantLng);
-
-                    $latDelta = $latTo - $latFrom;
-                    $lonDelta = $lonTo - $lonFrom;
-
-                    $a = sin($latDelta / 2) * sin($latDelta / 2) +
-                        cos($latFrom) * cos($latTo) *
-                        sin($lonDelta / 2) * sin($lonDelta / 2);
-                    $c = 2 * atan2(sqrt(max(0, min(1, $a))), sqrt(max(0, min(1, 1 - $a))));
-
-                    $deliveryDistance = round($earthRadius * $c, 2);
-                    Log::info("Distance calculated", ['order' => $orderNumber, 'distance' => $deliveryDistance]);
-
-                    // 3. جلب الشريحة المالية المطابقة للمسافة
-                    $slab = \App\Models\DistanceSlab::where('min_distance', '<=', $deliveryDistance)
-                        ->where('max_distance', '>=', $deliveryDistance)
-                        ->first();
-
-                    if ($slab) {
-                        $deliveryFee = (float) $slab->total_fee;
-                        $driverCommission = (float) $slab->driver_share;
-                        $platformCommission = (float) $slab->platform_share;
-                    } else {
-                        Log::warning("Order out of delivery range, applying fallback slab", ['distance' => $deliveryDistance]);
-                        $fallbackSlab = \App\Models\DistanceSlab::orderBy('max_distance', 'desc')->first()
-                            ?? \App\Models\DistanceSlab::first();
-                        if ($fallbackSlab) {
-                            $deliveryFee = (float) $fallbackSlab->total_fee;
-                            $driverCommission = (float) $fallbackSlab->driver_share;
-                            $platformCommission = (float) $fallbackSlab->platform_share;
-                        }
-                    }
-                } else {
-                    Log::warning("Missing restaurant coordinates for distance calculation; using default rate fallback", [
-                        'restaurant_id' => $restaurantId
-                    ]);
-                    $defaultSlab = \App\Models\DistanceSlab::first();
-                    if ($defaultSlab) {
-                        $deliveryFee = (float) $defaultSlab->total_fee;
-                        $driverCommission = (float) $defaultSlab->driver_share;
-                        $platformCommission = (float) $defaultSlab->platform_share;
-                    } else {
-                        $deliveryFee = 10.0;
-                        $driverCommission = 7.0;
-                        $platformCommission = 3.0;
-                    }
-                }
-
                 $orderDiscount = 0.00;
                 if ($totalDiscount > 0 && $cartSubtotal > 0) {
                     // Proportionally distribute the discount
-                    $orderDiscount = ($restaurantTotal / $cartSubtotal) * $totalDiscount;
-                    $orderDiscount = round($orderDiscount, 2);
+                    $orderDiscount = round(($subtotal / $cartSubtotal) * $totalDiscount, 2);
                 }
 
-                $finalTotal = max(0.00, $restaurantTotal - $orderDiscount);
+                // Calculate Grand Total (subtotal - discount + subOrderDeliveryFee)
+                $subtotalAfterDiscount = max(0.00, $subtotal - $orderDiscount);
+                $totalAmount = round($subtotalAfterDiscount + $subOrderDeliveryFee, 2);
 
                 // أ. إنشاء سجل الطلب الفرعي للمطعم
                 /** @var Order $order */
@@ -863,21 +904,24 @@ class OrdersController extends Controller
                     'payment_method' => $paymentMethod,
                     'coupon_code' => $coupon ? $coupon->code : null,
                     'discount_amount' => $orderDiscount,
-                    'total' => $finalTotal,
-                    'total_price' => $finalTotal,
+                    'total' => $totalAmount,
+                    'total_price' => $totalAmount,
                     'status' => $status,
                     'payment_status' => $paymentStatus,
                     'receipt_image' => $receiptPath,
                     'latitude' => $latitude,
                     'longitude' => $longitude,
                     'delivery_distance' => $deliveryDistance,
-                    'delivery_fee' => $deliveryFee,
+                    'delivery_fee' => $subOrderDeliveryFee,
                     'driver_commission' => $driverCommission,
                     'platform_commission' => $platformCommission,
                 ]);
 
-                // ب. إنشاء عنصر طلب لكل عنصر في السلة
+                // ب. إنشاء عنصر طلب لكل عنصر في السلة مع إثبات السعر والتخصيصات
                 foreach ($restaurantItems as $item) {
+                    $unitPrice = (float) ($item->price ?? ($item->subtotal / $item->quantity));
+                    $itemSubtotal = round($unitPrice * (int) $item->quantity, 2);
+
                     OrderItem::create([
                         'order_id' => $order->id,
                         'meal_id' => $item->meal_id,
@@ -888,19 +932,20 @@ class OrdersController extends Controller
                         'combo_meals' => $item->combo_meals,
                         'customizations' => $item->customizations ?? null,
                         'name' => $item->name,
-                        'quantity' => $item->quantity,
-                        'price' => $item->price,
-                        'subtotal' => $item->subtotal,
+                        'quantity' => (int) $item->quantity,
+                        'price' => $unitPrice,
+                        'subtotal' => $itemSubtotal,
                     ]);
                 }
 
                 $orders[] = $order->load('items.meal', 'user', 'restaurant.owner');
             }
 
-            // ج. تفريغ السلة بعد إتمام الطلب إذا كانت موجودة
-            if ($cart) {
-                CartItem::where('cart_id', $cart->id)->delete();
-                $cart->update(['total' => 0]);
+            // ج. تفريغ عناصر السلة بعد إتمام الطلب لتجنب بقاء عناصر قديمة
+            $userCart = $cart ?? Cart::where('user_id', $user->id)->first();
+            if ($userCart) {
+                CartItem::where('cart_id', $userCart->id)->delete();
+                $userCart->update(['total' => 0]);
             }
 
             return collect($orders);
@@ -1228,5 +1273,33 @@ class OrdersController extends Controller
                 'data' => $review
             ], 201);
         });
+    }
+
+    /**
+     * POST /api/v1/orders/{id}/cancel
+     * Cancel a specific sub-order safely without corrupting active sibling orders in the group.
+     */
+    public function cancelOrder(Request $request, $id)
+    {
+        $user = $request->user();
+
+        $order = Order::where('user_id', $user->id)->findOrFail($id);
+
+        if (in_array(strtolower($order->status), ['delivered', 'canceled', 'cancelled'])) {
+            return response()->json([
+                'status' => false,
+                'message' => 'لا يمكن إلغاء هذا الطلب لأنه مكتمل أو ملغي بالفعل'
+            ], 422);
+        }
+
+        $order->status = 'canceled';
+        $order->cancellation_reason = $request->input('reason', 'تم الإلغاء بواسطة العملاء');
+        $order->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'تم إلغاء الطلب بنجاح',
+            'order' => new OrderResource($order->load('items.meal', 'restaurant', 'driver')),
+        ]);
     }
 }
