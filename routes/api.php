@@ -7,6 +7,7 @@ use Modules\Notifications\Http\Controllers\NotificationController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\DiscountController;
+use App\Http\Controllers\Api\OfferController;
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -33,8 +34,13 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::post('/delivery/calculate-fee', [\App\Http\Controllers\Api\DeliveryCalculationController::class, 'calculate']);
 
 Route::prefix('v1')->group(function () {
+    Route::get('/offers/banners', [OfferController::class, 'banners']);
+    Route::get('/offers', [OfferController::class, 'banners']);
+    Route::get('/restaurants/{restaurant}/offers', [OfferController::class, 'restaurantOffers']);
+
     Route::post('/discount/apply', [DiscountController::class, 'apply']);
-    Route::post('/coupons/apply', [\Modules\Orders\Http\Controllers\CouponController::class, 'apply']);
+    Route::post('/coupons/apply', [DiscountController::class, 'apply']);
+    Route::post('/coupons/validate', [DiscountController::class, 'validateCoupon']);
     Route::get('/search', [SearchController::class, 'search']);
     Route::get('/privacy-policy', [SettingController::class, 'getPrivacyPolicy']);
     Route::get('/about-app', [SettingController::class, 'getAboutAppData']);

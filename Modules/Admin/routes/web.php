@@ -138,15 +138,24 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/reports/export/csv', [FinancialReportController::class, 'exportCsv'])->name('admin.reports.export.csv')->middleware('permission:view_financials');
     Route::get('/reports/export/pdf', [FinancialReportController::class, 'exportPdf'])->name('admin.reports.export.pdf')->middleware('permission:view_financials');
 
-    // Discount Codes
+    // Discount Codes / Coupons
+    Route::get('/discounts', [\Modules\Admin\Http\Controllers\DiscountCodeController::class, 'index'])->name('admin.discounts.index');
     Route::get('/discount-codes', [\Modules\Admin\Http\Controllers\DiscountCodeController::class, 'index'])->name('admin.discount-codes.index');
+    Route::post('/discounts', [\Modules\Admin\Http\Controllers\DiscountCodeController::class, 'store'])->name('admin.discounts.store');
     Route::post('/discount-codes', [\Modules\Admin\Http\Controllers\DiscountCodeController::class, 'store'])->name('admin.discount-codes.store');
+    Route::put('/discounts/{id}', [\Modules\Admin\Http\Controllers\DiscountCodeController::class, 'update'])->name('admin.discounts.update');
+    Route::patch('/discounts/{id}/toggle', [\Modules\Admin\Http\Controllers\DiscountCodeController::class, 'toggleStatus'])->name('admin.discounts.toggle');
+    Route::delete('/discounts/{id}', [\Modules\Admin\Http\Controllers\DiscountCodeController::class, 'destroy'])->name('admin.discounts.destroy');
     Route::delete('/discount-codes/{id}', [\Modules\Admin\Http\Controllers\DiscountCodeController::class, 'destroy'])->name('admin.discount-codes.destroy');
 
-    // Promotional Offers
+    // Promotional Offers & Combos
     Route::get('/offers', [\Modules\Admin\Http\Controllers\AdminOfferController::class, 'index'])->name('admin.offers.index')->middleware('permission:manage_settings');
     Route::post('/offers', [\Modules\Admin\Http\Controllers\AdminOfferController::class, 'store'])->name('admin.offers.store')->middleware('permission:manage_settings');
+    Route::put('/offers/{id}', [\Modules\Admin\Http\Controllers\AdminOfferController::class, 'update'])->name('admin.offers.update')->middleware('permission:manage_settings');
+    Route::patch('/offers/{id}/toggle-status', [\Modules\Admin\Http\Controllers\AdminOfferController::class, 'toggleStatus'])->name('admin.offers.toggle-status')->middleware('permission:manage_settings');
     Route::delete('/offers/{id}', [\Modules\Admin\Http\Controllers\AdminOfferController::class, 'destroy'])->name('admin.offers.destroy')->middleware('permission:manage_settings');
+    Route::patch('/offers/combos/{id}/toggle-status', [\Modules\Admin\Http\Controllers\AdminOfferController::class, 'toggleComboStatus'])->name('admin.offers.combos.toggle-status')->middleware('permission:manage_settings');
+    Route::delete('/offers/combos/{id}', [\Modules\Admin\Http\Controllers\AdminOfferController::class, 'destroyCombo'])->name('admin.offers.combos.destroy')->middleware('permission:manage_settings');
 });
 
 // Integrated Dummy Routes (Temporary Fallbacks to prevent crashes)
